@@ -1,0 +1,22 @@
+.env
+.env.local
+.DS_Store
+.git
+.gitignore
+.vscode
+composer.phar
+php.ini
+.user.ini
+storage/tts
+scripts
+*.md
+node_modules
+tailwind.config.js
+
+# Prevent Vercel from serving these Apache/PHP/redirect files as static downloads
+public/index.php
+/index.php
+.htaccess
+public/.htaccess
+public/_redirects
+sitemap-generate.php
