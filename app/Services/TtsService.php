@@ -47,8 +47,8 @@ class TtsService {
             if ($cached !== null) return $cached;
         }
 
-        // 2. Native Edge TTS (localhost with sockets)
-        if (extension_loaded('sockets') && class_exists(EdgeTTS::class)) {
+        // 2. Native Edge TTS (uses stream_socket_client via ReactPHP, no sockets ext needed)
+        if (class_exists(EdgeTTS::class)) {
             try {
                 $result = $this->synthesizeEdgeTTS($text, $voice);
                 if (!isset($result['error'])) {

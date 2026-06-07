@@ -39,21 +39,12 @@ class TtsController {
         $checks[] = '<h3>Required Extensions</h3>';
         $checks[] = (extension_loaded('json') ? '✅ json' : '❌ json') . '<br>';
         $checks[] = (extension_loaded('mbstring') ? '✅ mbstring' : '❌ mbstring') . '<br>';
-        $checks[] = (extension_loaded('sockets') ? '✅ sockets' : '❌ sockets (Blocked by InfinityFree - using HTTP fallbacks)') . '<br>';
-        
-        if (!extension_loaded('sockets')) {
-            $checks[] = '<div style="background:#fff3cd;padding:10px;border-radius:8px;margin:10px 0;border:1px solid #ffeeba;">';
-            $checks[] = '<strong>💡 How to get Sockets support:</strong><br>';
-            $checks[] = 'Free shared hosting (InfinityFree, ByetHost) always blocks sockets for security.<br>';
-            $checks[] = 'To use native EdgeTTS (WebSockets), consider these free alternatives that allow sockets:<br>';
-            $checks[] = '1. <strong>Railway.app</strong> (Fastest setup, supports all PHP extensions)<br>';
-            $checks[] = '2. <strong>Koyeb.com</strong> (Free tier for Docker/Node/PHP)<br>';
-            $checks[] = '3. <strong>Oracle Cloud Free Tier</strong> (Full VPS instance)<br>';
-            $checks[] = '4. <strong>Hugging Face Spaces</strong> (Docker based, very flexible)<br>';
-            $checks[] = '</div>';
-        }
-
+        $checks[] = (extension_loaded('sockets') ? '✅ sockets' : '⚠️ sockets (blocked, not needed — using stream_socket_client)') . '<br>';
         $checks[] = (function_exists('stream_socket_client') ? '✅ stream_socket_client' : '❌ stream_socket_client') . '<br>';
+
+        $checks[] = '<h3>Edge TTS Transport</h3>';
+        $checks[] = 'Native EdgeTTS uses <strong>stream_socket_client()</strong> via ReactPHP (no sockets ext required)<br>';
+        $checks[] = (class_exists(\Afaya\EdgeTTS\Service\EdgeTTS::class) ? '✅ EdgeTTS class found' : '❌ EdgeTTS class missing') . '<br>';
         $checks[] = (extension_loaded('curl') ? '✅ curl' : '❌ curl') . '<br>';
 
         $checks[] = '<h3>Google TTS Lao (tl=lo)</h3>';
