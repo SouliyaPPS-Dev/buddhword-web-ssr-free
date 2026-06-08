@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN a2enmod rewrite
 
-RUN echo '<VirtualHost *:8080>' > /etc/apache2/sites-available/000-default.conf \
+RUN echo '<VirtualHost *:7860>' > /etc/apache2/sites-available/000-default.conf \
     && echo '  DocumentRoot /var/www/html/public' >> /etc/apache2/sites-available/000-default.conf \
     && echo '  <Directory /var/www/html/public>' >> /etc/apache2/sites-available/000-default.conf \
     && echo '    Options -Indexes +FollowSymLinks' >> /etc/apache2/sites-available/000-default.conf \
@@ -18,7 +18,7 @@ RUN echo '<VirtualHost *:8080>' > /etc/apache2/sites-available/000-default.conf 
     && echo '  </Directory>' >> /etc/apache2/sites-available/000-default.conf \
     && echo '</VirtualHost>' >> /etc/apache2/sites-available/000-default.conf
 
-RUN sed -i 's/Listen 80/Listen 8080/' /etc/apache2/ports.conf
+RUN sed -i 's/Listen 80/Listen 7860/' /etc/apache2/ports.conf
 
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
@@ -34,6 +34,6 @@ RUN mkdir -p storage/cache storage/tmp storage/tts && chmod -R 777 storage
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-EXPOSE 8080
+EXPOSE 7860
 
 ENTRYPOINT ["/entrypoint.sh"]
