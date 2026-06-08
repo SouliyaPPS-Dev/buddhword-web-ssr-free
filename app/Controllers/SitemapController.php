@@ -11,7 +11,7 @@ class SitemapController {
     public function generate() {
         header('Content-Type: application/xml; charset=utf-8');
 
-        $siteUrl = rtrim(getSiteUrl(), '/');
+        $siteUrl = rtrim(getenv('SITE_URL') ?: 'https://buddhaword-web.hf.space', '/');
 
         $urls = [];
         $today = date('Y-m-d');

@@ -195,7 +195,7 @@ self.addEventListener("fetch", function (event) {
     request.headers.get("Accept").includes("text/html")
   ) {
     if (url.hostname === 'buddhaword.net') {
-      url.hostname = 'www.buddhaword.net';
+      url.hostname = 'buddhaword-web.hf.space';
       url.protocol = 'https:';
       event.respondWith(Response.redirect(url.toString(), 301));
       return;

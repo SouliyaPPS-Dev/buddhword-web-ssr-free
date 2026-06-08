@@ -2,7 +2,7 @@
 
 function getSiteUrl() {
     $siteUrl = $_ENV['SITE_URL'] ?? '';
-    $canonical = 'https://www.buddhaword.net';
+    $canonical = 'https://buddhaword-web.hf.space';
 
     // If SITE_URL is set and it's a free.nf address, override to canonical
     if ($siteUrl && stripos($siteUrl, 'free.nf') !== false) {
@@ -18,8 +18,8 @@ function getSiteUrl() {
     $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
     $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
 
-    // Map known InfinityFree hosts to canonical domain
-    if (stripos($host, 'free.nf') !== false || stripos($host, 'byet.com') !== false) {
+    // Map non-production hosts to canonical domain
+    if (stripos($host, 'localhost') !== false || stripos($host, 'free.nf') !== false || stripos($host, 'byet.com') !== false || stripos($host, '.hf.space') !== false) {
         return $canonical;
     }
 
