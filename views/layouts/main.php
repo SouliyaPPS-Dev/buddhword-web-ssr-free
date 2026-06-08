@@ -6,6 +6,7 @@
     <meta name="robots" content="<?= htmlspecialchars($seo['robots'] ?? 'index, follow, max-snippet:-1, max-image-preview:large') ?>">
     <!-- .Net -->
     <meta name="google-site-verification" content="QKK99WwZzlIx7DcLFPTIjSqVsrbxaLnC1TJGfaUyccA" />
+    <meta name="google-site-verification" content="fuEXN5sglc4hCeY5AX79o26VnApfci2UoWz0QReG96o" />
 
     <!-- Fly.io -->
     <!-- <meta name="google-site-verification" content="5A26Ske1zIDxNloCbtyUmRYFUf4FMtQokrMvBqcxDCA"> -->
