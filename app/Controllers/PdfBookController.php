@@ -240,6 +240,219 @@ class PdfBookController {
         ]);
     }
 
+    public function apiList() {
+        $books = PdfBook::getBooks();
+        if (empty($books)) {
+            $this->json(['books' => []]);
+            return;
+        }
+
+        $result = [];
+        foreach ($books as $book) {
+            $slug = $book['slug'];
+            $coverDir = __DIR__ . '/../../public/assets/' . $slug;
+            $coverUrl = null;
+            foreach (['png', 'jpg', 'jpeg'] as $ext) {
+                if (file_exists($coverDir . '/cover.' . $ext)) {
+                    $coverUrl = url('/assets/' . $slug . '/cover.' . $ext);
+                    break;
+                }
+            }
+            if (!$coverUrl) {
+                $coverUrl = url('assets/images/book-placeholder.svg');
+            }
+
+            $result[] = [
+                'slug'      => $slug,
+                'title'     => $book['title'] ?? $slug,
+                'year'      => $book['year'] ?? null,
+                'totalPages'=> $book['totalPages'] ?? 0,
+                'type'      => $book['type'] ?? 'docx',
+                'coverUrl'  => $coverUrl,
+            ];
+        }
+
+        $this->json(['books' => $result]);
+    }
+
+    public function apiDetails() {
+        $slug  = $_GET['slug'] ?? '';
+        $title = $_GET['title'] ?? '';
+
+        if (!$slug && !$title) {
+            http_response_code(400);
+            $this->json(['error' => 'Missing slug or title parameter']);
+            return;
+        }
+
+        if (!$slug && $title) {
+            $books = PdfBook::getBooks();
+            foreach ($books as $book) {
+                if (($book['title'] ?? '') === $title) {
+                    $slug = $book['slug'];
+                    break;
+                }
+            }
+            if (!$slug) {
+                http_response_code(404);
+                $this->json(['error' => 'Book not found by title']);
+                return;
+            }
+        }
+
+        $info = PdfBook::getInfo($slug);
+        if (!$info) {
+            http_response_code(404);
+            $this->json(['error' => 'Book not found']);
+            return;
+        }
+
+        $coverDir = __DIR__ . '/../../public/assets/' . $slug;
+        $coverUrl = null;
+        foreach (['png', 'jpg', 'jpeg'] as $ext) {
+            if (file_exists($coverDir . '/cover.' . $ext)) {
+                $coverUrl = url('/assets/' . $slug . '/cover.' . $ext);
+                break;
+            }
+        }
+        if (!$coverUrl) {
+            $coverUrl = url('assets/images/book-placeholder.svg');
+        }
+
+        $firstPage = PdfBook::getPage($slug, 1);
+        $preview = null;
+        if ($firstPage && !empty($firstPage['text'])) {
+            $text = $firstPage['text'];
+            $lines = explode("\n", trim($text));
+            $previewLines = array_slice($lines, 0, 10);
+            $preview = implode("\n", $previewLines);
+            if (count($lines) > 10) $preview .= '...';
+        }
+
+        $this->json([
+            'book' => [
+                'slug'       => $slug,
+                'title'      => $info['title'] ?? $slug,
+                'year'       => $info['year'] ?? null,
+                'totalPages' => $info['totalPages'] ?? 0,
+                'type'       => $info['type'] ?? 'docx',
+                'coverUrl'   => $coverUrl,
+                'preview'    => $preview,
+            ]
+        ]);
+    }
+
+    public function apiPageNav() {
+        $slug = $_GET['book'] ?? '';
+        $pageNum = intval($_GET['n'] ?? 0);
+        $query = $_GET['q'] ?? '';
+
+        if (!$slug || $pageNum < 1) {
+            http_response_code(400);
+            $this->json(['error' => 'Missing or invalid book/n parameter']);
+            return;
+        }
+
+        $info = PdfBook::getInfo($slug);
+        if (!$info) {
+            http_response_code(404);
+            $this->json(['error' => 'Book not found']);
+            return;
+        }
+
+        $page = PdfBook::getPage($slug, $pageNum);
+        if (!$page) {
+            http_response_code(404);
+            $this->json(['error' => 'Page not found']);
+            return;
+        }
+
+        $totalPages = $info['totalPages'] ?? 0;
+        $prevPage = $pageNum > 1 ? $pageNum - 1 : null;
+        $nextPage = $pageNum < $totalPages ? $pageNum + 1 : null;
+
+        $highlightWords = [];
+        if ($query && !empty($page['words'])) {
+            $q = mb_strtolower(trim($query));
+            foreach ($page['words'] as $word) {
+                if (mb_strpos(mb_strtolower($word['w']), $q) !== false) {
+                    $highlightWords[] = $word;
+                }
+            }
+        }
+
+        $this->json([
+            'book' => [
+                'slug'       => $slug,
+                'title'      => $info['title'] ?? $slug,
+                'totalPages' => $totalPages,
+            ],
+            'page' => [
+                'number' => $page['page'],
+                'text'   => $page['text'],
+                'words'  => $page['words'] ?? [],
+            ],
+            'highlightWords' => $highlightWords,
+            'prevPage' => $prevPage,
+            'nextPage' => $nextPage,
+        ]);
+    }
+
+    public function apiFilter() {
+        $query  = $_GET['q'] ?? '';
+        $year   = $_GET['year'] ?? '';
+        $type   = $_GET['type'] ?? '';
+        $page   = max(1, intval($_GET['page'] ?? 1));
+        $perPage = max(1, min(100, intval($_GET['perPage'] ?? 50)));
+
+        $books = PdfBook::getBooks();
+        $result = [];
+
+        foreach ($books as $book) {
+            $slug = $book['slug'];
+
+            if ($year && ($book['year'] ?? '') != $year) continue;
+            if ($type && ($book['type'] ?? '') !== $type) continue;
+            if ($query) {
+                $title = $book['title'] ?? $slug;
+                if (mb_stripos($title, $query) === false) continue;
+            }
+
+            $coverDir = __DIR__ . '/../../public/assets/' . $slug;
+            $coverUrl = null;
+            foreach (['png', 'jpg', 'jpeg'] as $ext) {
+                if (file_exists($coverDir . '/cover.' . $ext)) {
+                    $coverUrl = url('/assets/' . $slug . '/cover.' . $ext);
+                    break;
+                }
+            }
+            if (!$coverUrl) {
+                $coverUrl = url('assets/images/book-placeholder.svg');
+            }
+
+            $result[] = [
+                'slug'       => $slug,
+                'title'      => $book['title'] ?? $slug,
+                'year'       => $book['year'] ?? null,
+                'totalPages' => $book['totalPages'] ?? 0,
+                'type'       => $book['type'] ?? 'docx',
+                'coverUrl'   => $coverUrl,
+            ];
+        }
+
+        $total = count($result);
+        $offset = ($page - 1) * $perPage;
+        $paged = array_slice($result, $offset, $perPage);
+
+        $this->json([
+            'books'    => $paged,
+            'total'    => $total,
+            'page'     => $page,
+            'perPage'  => $perPage,
+            'totalPages' => (int)ceil($total / $perPage),
+        ]);
+    }
+
     private function json($data) {
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode($data, JSON_UNESCAPED_UNICODE);
