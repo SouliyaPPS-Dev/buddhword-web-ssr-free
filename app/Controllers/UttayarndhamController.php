@@ -116,6 +116,12 @@ class UttayarndhamController {
             }
         }
 
+        // Remove entire RDF metadata elements to prevent TTS from reading hidden schema text
+        $content = preg_replace('/<[^>]*class="[^"]*\brdf-meta\b[^"]*"[^>]*>.*?<\/[^>]+>/is', '', $content);
+        // Remove container elements that only hold RDF metadata (empty after removal above)
+        $content = preg_replace('/<div[^>]*class="[^"]*\bfield-name-title\b[^"]*"[^>]*>.*?<\/div>/is', '', $content);
+
+        $content = strip_tags($content, '<p><br><b><i><u><h2><h3><ul><ol><li><strong><em><a><img><blockquote><table><tr><td><th>');
         $content = preg_replace('/<img\s+([^>]*?)src\s*=\s*"((?!https?:|\/\/))([^"]+)"/i', '<img $1src="' . self::BASE_URL . '/$3"', $content);
         $content = preg_replace('/<img\s+([^>]*?)src\s*=\s*\'((?!https?:|\/\/))([^\']+)\'/i', '<img $1src=\'' . self::BASE_URL . '/$3\'', $content);
 

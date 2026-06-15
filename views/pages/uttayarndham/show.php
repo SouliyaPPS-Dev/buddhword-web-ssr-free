@@ -50,6 +50,9 @@ class="relative min-h-screen pb-20">
 
     <style>
 
+        /* Hide Drupal RDF metadata elements that leak into TTS text extraction */
+        .rdf-meta { display: none !important; }
+
         /* Dark mode overrides - warm tones for eye comfort */
         .dark .reader-card {
             background: rgba(28, 26, 30, 0.97) !important;
