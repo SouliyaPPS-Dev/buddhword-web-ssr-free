@@ -93,6 +93,8 @@ var ttsInterval = null;
 var ttsTimeout = null;
 var ttsPaused = false;
 var ttsProgressInterval = null;
+var ttsLang = '';
+var ttsPlaybackRate = 1.0;
 
 function detectLanguage(text) {
     var laoCount = (text.match(/[\u{0E80}-\u{0EFF}]/gu) || []).length;
@@ -182,8 +184,8 @@ function toggleTTS() {
         return '<span class="tts-w">' + m + '</span>';
     });
 
-    ttsPaused = false;
-    ttsPlaying = true;
+    ttsLang = lang;
+    ttsPlaybackRate = (lang === 'th-TH' || lang === 'lo-LA') ? 0.8 : 1.0;
     updateTTSIcon();
     var btn = document.getElementById('ttsBtn');
     if (btn) { btn.classList.remove('text-white/70'); btn.classList.add('text-green-300', 'bg-green-500/20'); }
@@ -223,6 +225,7 @@ function toggleTTS() {
 
         ttsSource = ttsAudioCtx.createBufferSource();
         ttsSource.buffer = item.buffer;
+        ttsSource.playbackRate.value = ttsPlaybackRate;
         ttsSource.connect(ttsAudioCtx.destination);
 
         var tpIdx = 0;
@@ -231,7 +234,7 @@ function toggleTTS() {
         if (ttsProgressInterval) clearInterval(ttsProgressInterval);
         ttsProgressInterval = setInterval(function() {
             if (!ttsPlaying) { clearInterval(ttsProgressInterval); ttsProgressInterval = null; return; }
-            var elapsed = ttsAudioCtx.currentTime - firstChunkStartTime;
+            var elapsed = (ttsAudioCtx.currentTime - firstChunkStartTime) * ttsPlaybackRate;
             var pct = totalEstDuration > 0 ? Math.min(100, (elapsed / totalEstDuration) * 100) : 0;
             var pEl = document.getElementById('ttsProgress');
             var tEl = document.getElementById('ttsTime');
@@ -241,7 +244,7 @@ function toggleTTS() {
 
         ttsInterval = setInterval(function() {
             if (!ttsPlaying) { clearInterval(ttsInterval); return; }
-            var elapsed = ttsAudioCtx.currentTime - chunkStartTime;
+            var elapsed = (ttsAudioCtx.currentTime - chunkStartTime) * ttsPlaybackRate;
             while (tpIdx < item.timepoints.length && elapsed >= item.timepoints[tpIdx]) {
                 words.forEach(function(w) { w.classList.remove('tts-active'); });
                 var gIdx = item.wordStart + tpIdx;
@@ -318,16 +321,17 @@ function toggleTTS() {
                 isSeqPlaying = false;
                 nextToPlay = ci + 1;
                 for (var j = ci + 1; j < allDecodedChunks.length; j++) { chunkQueue[j] = allDecodedChunks[j]; }
-                firstChunkStartTime = ttsAudioCtx.currentTime - targetTime;
-                var cst = ttsAudioCtx.currentTime - timeInChunk;
+                firstChunkStartTime = ttsAudioCtx.currentTime - targetTime / ttsPlaybackRate;
+                var cst = ttsAudioCtx.currentTime - timeInChunk / ttsPlaybackRate;
                 ttsSource = ttsAudioCtx.createBufferSource();
                 ttsSource.buffer = ch.buffer;
+                ttsSource.playbackRate.value = ttsPlaybackRate;
                 ttsSource.connect(ttsAudioCtx.destination);
                 var tpi = 0;
                 while (tpi < ch.timepoints.length && timeInChunk >= ch.timepoints[tpi]) tpi++;
                 ttsInterval = setInterval(function() {
                     if (!ttsPlaying) { clearInterval(ttsInterval); return; }
-                    var elapsed = ttsAudioCtx.currentTime - cst;
+                    var elapsed = (ttsAudioCtx.currentTime - cst) * ttsPlaybackRate;
                     while (tpi < ch.timepoints.length && elapsed >= ch.timepoints[tpi]) {
                         words.forEach(function(w) { w.classList.remove('tts-active'); });
                         var gi = ch.wordStart + tpi;
