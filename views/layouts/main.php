@@ -887,7 +887,7 @@
             <div class="relative">
                 <button @click="showMore = !showMore" @click.outside="showMore = false" class="flex flex-col items-center justify-center p-1.5 sm:p-2 rounded-xl transition-all duration-200 min-w-[46px] sm:min-w-[65px] text-[#795548] hover:bg-[#c9bba7]" aria-label="More menus">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" /></svg>
-                    <span class="text-[9px] sm:text-[10px] font-bold mt-0.5">More</span>
+                    <span class="text-[9px] sm:text-[10px] font-bold mt-0.5">ອື່ນໆ</span>
                 </button>
                 <div x-show="showMore" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95" class="absolute bottom-full right-0 mb-2 bg-white/95 backdrop-blur-md rounded-xl shadow-xl border border-gray-100 py-1 min-w-[180px]" style="display: none;">
                     <?php foreach ($moreItems as $item):
