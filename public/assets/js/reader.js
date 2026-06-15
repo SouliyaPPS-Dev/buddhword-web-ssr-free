@@ -187,7 +187,7 @@ function toggleTTS() {
     ttsPaused = false;
     ttsPlaying = true;
     ttsLang = lang;
-    ttsPlaybackRate = (lang === 'th-TH' || lang === 'lo-LA') ? 0.8 : 1.0;
+    ttsPlaybackRate = 1.0;
     updateTTSIcon();
     var btn = document.getElementById('ttsBtn');
     if (btn) { btn.classList.remove('text-white/70'); btn.classList.add('text-green-300', 'bg-green-500/20'); }
