@@ -145,7 +145,7 @@ class="relative min-h-screen pb-20">
                             isFavorite: (function() {
                                 try {
                                     var favs = JSON.parse(localStorage.getItem('buddhaword_favorites') || '[]');
-                                    var href = '<?= addslashes(preg_replace('/[[:cntrl:]]/', ' ', $href)) ?>';
+                                    var href = '<?= addslashes(preg_replace('/[[:cntrl:]]/', ' ', url('/anakame/read?href=' . urlencode($href)))) ?>';
                                     return href ? favs.some(function(f) { return f.href === href; }) : false;
                                 } catch(e) {
                                     return false;
@@ -154,7 +154,7 @@ class="relative min-h-screen pb-20">
                             toggleFavorite() {
                                 try {
                                     var favs = JSON.parse(localStorage.getItem('buddhaword_favorites') || '[]');
-                                    var item = { title: '<?= addslashes(preg_replace('/[[:cntrl:]]/', ' ', $title)) ?>', href: '<?= addslashes(preg_replace('/[[:cntrl:]]/', ' ', $href)) ?>' };
+                                    var item = { title: '<?= addslashes(preg_replace('/[[:cntrl:]]/', ' ', $title)) ?>', href: '<?= addslashes(preg_replace('/[[:cntrl:]]/', ' ', url('/anakame/read?href=' . urlencode($href)))) ?>' };
                                     if (this.isFavorite) {
                                         favs = favs.filter(function(f) { return f.href !== item.href; });
                                     } else {
