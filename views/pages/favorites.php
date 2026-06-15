@@ -2,6 +2,14 @@
     <h1 class="text-xl sm:text-2xl font-bold text-[#795548] mb-6 bg-white/80 px-4 py-2 rounded-xl shadow-sm Lao-font">ລາຍການທີ່ຖືກໃຈ</h1>
 
     <div class="flex flex-col gap-3 sm:gap-4 w-full max-w-4xl">
+        <template x-if="favorites.length > 0">
+            <div class="flex justify-end">
+                <button @click="if(confirm('ຕ້ອງການລ້າງລາຍການທີ່ຖືກໃຈທັງໝົດ?')) { favorites = []; localStorage.setItem('buddhaword_favorites', '[]'); window.dispatchEvent(new CustomEvent('sync-complete')); }" class="flex items-center gap-1.5 px-3 py-1.5 text-sm text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-colors Lao-font">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                    ລ້າງທັງໝົດ
+                </button>
+            </div>
+        </template>
         <template x-if="favorites.length === 0">
             <div class="text-center py-16 sm:py-20 bg-white/50 backdrop-blur-sm rounded-2xl sm:rounded-3xl border border-white/20">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 sm:h-16 sm:w-16 text-gray-300 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
