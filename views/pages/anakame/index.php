@@ -6,13 +6,39 @@ document.addEventListener('alpine:init', () => {
         searchQuery: '<?= htmlspecialchars($query, ENT_QUOTES) ?>',
         displayCount: 20,
         pageSize: 20,
+        isLoading: false,
+        observer: null,
 
         get visibleItems() {
             return this.filteredItems.slice(0, this.displayCount);
         },
 
+        get hasMore() {
+            return this.displayCount < this.filteredItems.length;
+        },
+
+        init() {
+            this.$nextTick(() => this.setupObserver());
+        },
+
+        setupObserver() {
+            const sentinel = this.$refs.sentinel;
+            if (!sentinel) return;
+            this.observer = new IntersectionObserver((entries) => {
+                if (entries[0].isIntersecting && this.hasMore && !this.isLoading) {
+                    this.loadMore();
+                }
+            }, { rootMargin: '200px' });
+            this.observer.observe(sentinel);
+        },
+
         loadMore() {
-            this.displayCount = Math.min(this.displayCount + this.pageSize, this.filteredItems.length);
+            if (this.isLoading || !this.hasMore) return;
+            this.isLoading = true;
+            setTimeout(() => {
+                this.displayCount = Math.min(this.displayCount + this.pageSize, this.filteredItems.length);
+                this.isLoading = false;
+            }, 200);
         },
 
         filterItems() {
@@ -80,12 +106,26 @@ document.addEventListener('alpine:init', () => {
             </template>
         </div>
 
-        <!-- Load More -->
-        <div x-show="displayCount < filteredItems.length" class="text-center mt-4">
-            <button @click="loadMore()"
-                    class="bg-white/90 hover:bg-white text-gray-800 px-6 py-2 rounded-xl font-medium shadow-md transition-all hover:shadow-lg Lao-font text-sm">
-                ໂຫຼດເພີ່ມເຕີມ...
-            </button>
+        <!-- Load More / Infinite Scroll Sentinel -->
+        <div x-ref="sentinel" class="text-center mt-4">
+            <template x-if="hasMore">
+                <div class="flex flex-col items-center gap-3">
+                    <button @click="loadMore()"
+                            class="bg-white/90 hover:bg-white text-gray-800 px-6 py-2 rounded-xl font-medium shadow-md transition-all hover:shadow-lg Lao-font text-sm">
+                        ໂຫຼດເພີ່ມເຕີມ...
+                    </button>
+                    <div x-show="isLoading" class="flex items-center gap-2 text-white/80 text-sm Lao-font">
+                        <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                        </svg>
+                        ກຳລັງໂຫຼດ...
+                    </div>
+                </div>
+            </template>
+            <template x-if="!hasMore && filteredItems.length > 0">
+                <p class="text-white/50 text-sm Lao-font py-4">— ທັງໝົດ —</p>
+            </template>
         </div>
 
         <!-- Empty -->
