@@ -73,7 +73,7 @@ document.addEventListener('alpine:init', () => {
 
     <!-- Header -->
     <div class="w-full max-w-4xl mt-4 mb-6">
-        <h1 class="text-2xl sm:text-3xl font-bold text-white text-center Lao-font">ອານາຄົມສູດ (ພາສາໄທ)</h1>
+        <h1 class="text-2xl sm:text-3xl font-bold text-white text-center Lao-font">Anakame (ພາສາໄທ)</h1>
         <p class="text-white/70 text-sm text-center Lao-font">Anakame - ພຣະສູດພາສາໄທ</p>
     </div>
 
@@ -83,7 +83,7 @@ document.addEventListener('alpine:init', () => {
             <input type="search"
                    x-model="searchQuery"
                    @input.debounce.300ms="filterItems()"
-                   placeholder="ຄົ້ນຫາອານາຄົມສູດ..."
+                   placeholder="ຄົ້ນຫາAnakame..."
                    class="w-full bg-white/90 backdrop-blur-md border-none rounded-lg py-2.5 pl-9 pr-3 text-sm shadow-lg focus:ring-2 focus:ring-brown-500 outline-none transition-all Lao-font">
             <div class="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">

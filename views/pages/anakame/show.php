@@ -87,7 +87,7 @@ class="relative min-h-screen pb-20">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 inline mx-1 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
             </li>
             <li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
-                <a href="<?= url('/anakame') ?>" itemprop="item" class="hover:text-white transition-colors"><span itemprop="name">ອານາຄົມສູດ</span></a>
+                <a href="<?= url('/anakame') ?>" itemprop="item" class="hover:text-white transition-colors"><span itemprop="name">Anakame</span></a>
                 <meta itemprop="position" content="2">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 inline mx-1 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
             </li>

@@ -18,9 +18,9 @@ class AnakameController {
             'items' => array_values($items),
             'query' => $query,
             'seo' => [
-                'title' => 'ອານາຄົມສູດ (ພາສາໄທ) - ຄຳສອນພຸດທະ',
-                'description' => 'ອານາຄົມສູດ ພາສາໄທ ຮວບຮວມພຣະສູດສຳຄັນ',
-                'keywords' => 'ອານາຄົມສູດ, ພຣະສູດ, ພາສາໄທ',
+                'title' => 'Anakame (ພາສາໄທ) - ຄຳສອນພຸດທະ',
+                'description' => 'Anakame ພາສາໄທ ຮວບຮວມພຣະສູດສຳຄັນ',
+                'keywords' => 'Anakame, ພຣະສູດ, ພາສາໄທ',
             ]
         ]);
     }
@@ -91,7 +91,7 @@ class AnakameController {
         $url = self::BASE_URL . '/' . ltrim($href, '/');
         $html = @file_get_contents($url);
         $content = '';
-        $title = 'ອານາຄົມສູດ';
+        $title = 'Anakame';
 
         if ($html !== false) {
             $content = $this->extractContent($html);
@@ -111,8 +111,8 @@ class AnakameController {
             'prevHref' => $prevHref,
             'nextHref' => $nextHref,
             'seo' => [
-                'title' => trim($title) . ' - ອານາຄົມສູດ',
-                'description' => 'ອ່ານອານາຄົມສູດ ພາສາໄທ',
+                'title' => trim($title) . ' - Anakame',
+                'description' => 'ອ່ານAnakame ພາສາໄທ',
             ]
         ]);
     }
@@ -130,7 +130,7 @@ class AnakameController {
 
     private function extractTitle($html): string {
         preg_match('/<title>(.*?)<\/title>/si', $html, $m);
-        return $m[1] ?? 'ອານາຄົມສູດ';
+        return $m[1] ?? 'Anakame';
     }
 
     private function fetchListing(): array {

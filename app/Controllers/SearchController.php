@@ -155,7 +155,7 @@ class SearchController {
                         $results[] = [
                             'type' => 'anakame',
                             'title' => $title,
-                            'detail' => 'ອານາຄົມສູດ ພາສາໄທ',
+                            'detail' => 'Anakame ພາສາໄທ',
                             'url' => url('/anakame/read?href=' . urlencode($normalized)),
                             'category' => 'Anakame',
                         ];
