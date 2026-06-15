@@ -100,10 +100,26 @@ class UttayarndhamController {
             }
         }
 
+        $prevUrl = null;
+        $nextUrl = null;
+        for ($page = 0; $page <= 5; $page++) {
+            $pageItems = $this->fetchPage($page);
+            if (empty($pageItems)) break;
+            foreach ($pageItems as $idx => $item) {
+                if ($item['url'] === $url || $item['url'] === '/' . ltrim($url, '/')) {
+                    if ($idx > 0) $prevUrl = $pageItems[$idx - 1]['url'];
+                    if ($idx < count($pageItems) - 1) $nextUrl = $pageItems[$idx + 1]['url'];
+                    break 2;
+                }
+            }
+        }
+
         return view('pages.uttayarndham.show', [
             'title' => trim(strip_tags($title)),
             'content' => $content,
             'url' => $url,
+            'prevUrl' => $prevUrl,
+            'nextUrl' => $nextUrl,
             'seo' => [
                 'title' => trim(strip_tags($title)) . ' - ອຸດທະຍານທັມ',
                 'description' => 'ອ່ານບົດຄວາມທັມມະ',

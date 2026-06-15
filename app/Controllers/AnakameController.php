@@ -98,10 +98,18 @@ class AnakameController {
             $title = $this->extractTitle($html);
         }
 
+        $allItems = $this->fetchListing();
+        $allHrefs = array_column($allItems, 'href');
+        $currentIndex = array_search($href, $allHrefs);
+        $prevHref = $currentIndex !== false && $currentIndex > 0 ? $allItems[$currentIndex - 1]['href'] : null;
+        $nextHref = $currentIndex !== false && $currentIndex < count($allItems) - 1 ? $allItems[$currentIndex + 1]['href'] : null;
+
         return view('pages.anakame.show', [
             'href' => $href,
             'content' => $content,
             'title' => trim($title),
+            'prevHref' => $prevHref,
+            'nextHref' => $nextHref,
             'seo' => [
                 'title' => trim($title) . ' - ອານາຄົມສູດ',
                 'description' => 'ອ່ານອານາຄົມສູດ ພາສາໄທ',
