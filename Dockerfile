@@ -31,6 +31,10 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction
 COPY . .
 
 RUN mkdir -p storage/cache/sqlite storage/tmp storage/tts && chmod -R 777 storage
+RUN for f in databases/*.sqlite.gz; do \
+      code=$(basename "$f" .sqlite.gz); \
+      php -d memory_limit=256M -r "file_put_contents('storage/cache/sqlite/${code}.sqlite', gzdecode(file_get_contents('databases/${code}.sqlite.gz')));"; \
+    done
 
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
