@@ -1,11 +1,5 @@
 <div x-data="{
-    touchStartX: 0,
-    touchEndX: 0,
-    isTurning: false,
-    turnDirection: '',
     theme: localStorage.getItem('buddhaword_theme') || 'light',
-    prevUrl: <?= $prevUrl ? "'" . url('/uttayarndham/read') . '?url=' . urlencode($prevUrl) . "'" : "''" ?>,
-    nextUrl: <?= $nextUrl ? "'" . url('/uttayarndham/read') . '?url=' . urlencode($nextUrl) . "'" : "''" ?>,
     init() {
         this.refreshFavorites();
         this.$nextTick(() => {});
@@ -48,83 +42,13 @@
         } else {
             document.documentElement.classList.remove('dark');
         }
-    },
-    handleTouchStart(e) {
-        let el = e.target;
-        while (el && el !== e.currentTarget) {
-            const tag = el.tagName.toLowerCase();
-            if (tag === 'button' || tag === 'a' || tag === 'input' || tag === 'select' || tag === 'textarea' || el.isContentEditable || el.closest('[contenteditable]') || el.getAttribute('role') === 'button') {
-                this.touchStartX = 0;
-                return;
-            }
-            el = el.parentElement;
-        }
-        this.touchStartX = e.changedTouches[0].screenX;
-    },
-    handleTouchEnd(e) {
-        this.touchEndX = e.changedTouches[0].screenX;
-        if (this.touchStartX !== 0) {
-            this.handleSwipe();
-        }
-    },
-    handleSwipe() {
-        const threshold = 80;
-        const diff = this.touchStartX - this.touchEndX;
-        if (Math.abs(diff) > threshold) {
-            if (diff > 0) {
-                this.navigate('next');
-            } else {
-                this.navigate('prev');
-            }
-        }
-    },
-    navigate(dir) {
-        const target = dir === 'next' ? this.nextUrl : this.prevUrl;
-        if (!target || this.isTurning) return;
-        this.turnDirection = dir === 'next' ? 'turn-next' : 'turn-prev';
-        this.isTurning = true;
-        setTimeout(() => {
-            window.location.href = target;
-        }, 500);
     }
 }"
-@touchstart="handleTouchStart($event)"
-@touchend="handleTouchEnd($event)"
-class="relative overflow-hidden min-h-screen pb-20" style="touch-action: manipulation;">
+class="relative min-h-screen pb-20">
 
     <input type="hidden" id="ttsApiUrl" value="<?= url('/api/tts/synthesize') ?>">
 
     <style>
-        .page-container {
-            transition: transform 0.5s cubic-bezier(0.645, 0.045, 0.355, 1), opacity 0.4s ease;
-            transform-origin: center;
-            perspective: 1500px;
-        }
-        .turn-next {
-            transform: rotateY(-20deg) translateX(-100%) scale(0.9);
-            opacity: 0;
-        }
-        .turn-prev {
-            transform: rotateY(20deg) translateX(100%) scale(0.9);
-            opacity: 0;
-        }
-        .swipe-hint {
-            position: fixed;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 50px;
-            height: 50px;
-            background: rgba(121, 85, 72, 0.2);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.3s;
-            z-index: 50;
-        }
-        .swipe-hint.visible { opacity: 1; }
 
         /* Dark mode overrides - warm tones for eye comfort */
         .dark .reader-card {
@@ -134,16 +58,6 @@ class="relative overflow-hidden min-h-screen pb-20" style="touch-action: manipul
         }
         .dark .reader-content {
             color: #E8DCC8 !important;
-        }
-        .dark .reader-nav {
-            background: rgba(40, 35, 38, 0.6) !important;
-            border-color: rgba(255,255,255,0.05);
-        }
-        .dark .reader-nav button, .dark .reader-nav a {
-            color: #C4A88A !important;
-        }
-        .dark .reader-nav button:hover, .dark .reader-nav a:hover {
-            color: #DDCFBC !important;
         }
         .dark .reader-font-controls {
             background: rgba(28, 26, 30, 0.95) !important;
@@ -205,7 +119,7 @@ class="relative overflow-hidden min-h-screen pb-20" style="touch-action: manipul
         </ol>
     </nav>
 
-    <article id="readerFullscreenTarget" class="max-w-4xl mx-auto p-2 sm:p-6 page-container" :class="isTurning ? turnDirection : ''">
+    <article id="readerFullscreenTarget" class="max-w-4xl mx-auto p-2 sm:p-6">
         <div class="bg-white/95 backdrop-blur-md rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden border border-white/20 ring-1 ring-black/5 reader-card">
             <!-- Header -->
             <div class="p-4 sm:p-6 bg-[#795548] text-white">
@@ -289,47 +203,9 @@ class="relative overflow-hidden min-h-screen pb-20" style="touch-action: manipul
                 <?php endif; ?>
             </div>
 
-            <!-- Navigation Buttons -->
-            <div class="px-4 sm:px-6 py-4 flex justify-between items-center bg-gray-50/50 border-t border-gray-100 reader-nav">
-                <div class="flex-1">
-                    <?php if ($prevUrl): ?>
-                        <a href="<?= url('/uttayarndham/read') . '?url=' . urlencode($prevUrl) ?>" class="flex items-center gap-1 text-[#795548] font-bold Lao-font hover:underline group">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transform group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                            </svg>
-                            ກ່ອນໜ້າ
-                        </a>
-                    <?php endif; ?>
-                </div>
-                <div class="flex-1 flex justify-end">
-                    <?php if ($nextUrl): ?>
-                        <a href="<?= url('/uttayarndham/read') . '?url=' . urlencode($nextUrl) ?>" class="flex items-center gap-1 text-[#795548] font-bold Lao-font hover:underline group text-right">
-                            ຕໍ່ໄປ
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transform group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                            </svg>
-                        </a>
-                    <?php endif; ?>
-                </div>
-            </div>
         </div>
     </article>
 
-    <!-- Swipe Hints -->
-    <?php if ($prevUrl): ?>
-    <div class="swipe-hint left-4" :class="touchEndX > touchStartX && (touchEndX - touchStartX > 40) ? 'visible' : ''">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-[#795548]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-        </svg>
-    </div>
-    <?php endif; ?>
-    <?php if ($nextUrl): ?>
-    <div class="swipe-hint right-4" :class="touchStartX > touchEndX && (touchStartX - touchEndX > 40) ? 'visible' : ''">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-[#795548]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-        </svg>
-    </div>
-    <?php endif; ?>
 </div>
 
 <script src="<?= url('/assets/js/reader.js') ?>"></script>
