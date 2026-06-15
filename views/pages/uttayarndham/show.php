@@ -16,7 +16,7 @@
         }
     },
     get favIndex() {
-        return this.favorites.findIndex(f => f.id === '<?= htmlspecialchars($url) ?>');
+        return this.favorites.findIndex(f => f.id === <?= json_encode($url) ?>);
     },
     get isInFavorites() {
         return this.favIndex !== -1;
@@ -25,9 +25,9 @@
         try {
             let favs = JSON.parse(localStorage.getItem('buddhaword_favorites') || '[]');
             if (this.isInFavorites) {
-                favs = favs.filter(f => f.id !== '<?= htmlspecialchars($url) ?>');
+                favs = favs.filter(f => f.id !== <?= json_encode($url) ?>);
             } else {
-                favs.push({ id: '<?= htmlspecialchars($url) ?>', title: '<?= htmlspecialchars($title) ?>', category: 'uttayarndham' });
+                favs.push({ id: <?= json_encode($url) ?>, title: <?= json_encode($title) ?>, category: 'uttayarndham' });
             }
             localStorage.setItem('buddhaword_favorites', JSON.stringify(favs));
             this.refreshFavorites();
