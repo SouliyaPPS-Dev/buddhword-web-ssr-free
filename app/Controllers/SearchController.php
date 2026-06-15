@@ -6,9 +6,10 @@ use App\Models\Book;
 use App\Models\Video;
 use App\Models\Calendar;
 use App\Models\PdfBook;
+use App\Services\EtipitakaService;
    
 class SearchController {
-    private const MAX_PER_TYPE = 30;
+    private const MAX_PER_TYPE = 20;
     private const MAX_TOTAL = 100;
 
     public function search() {
@@ -40,7 +41,34 @@ class SearchController {
             }
         }
 
-        // 2. Search PDF/DOCX Book Text (early for diversity)
+        // 2. Search E-Tipitaka
+        $etipitakaCodes = ['thai', 'thaimm'];
+        foreach ($etipitakaCodes as $code) {
+            if (($countByType['etipitaka'] ?? 0) >= self::MAX_PER_TYPE) break;
+            try {
+                $etResults = EtipitakaService::search($code, $q, 10);
+                foreach ($etResults as $er) {
+                    if (($countByType['etipitaka'] ?? 0) >= self::MAX_PER_TYPE) break;
+                    $volume = (int)$er['volume'];
+                    $page = (int)$er['page'];
+                    $content = trim(preg_replace('/\s+/', ' ', $er['content'] ?? ''));
+                    $detail = mb_strlen($content) > 150 ? mb_substr($content, 0, 150) . '...' : $content;
+                    $label = EtipitakaService::getLabel($code);
+                    $results[] = [
+                        'type' => 'etipitaka',
+                        'title' => 'ເຫຼັ້ມທີ່ ' . $volume . ' ຫນ້າ ' . $page . ' (' . $label . ')',
+                        'detail' => $detail,
+                        'url' => url('/etipitaka/' . $code . '/' . $volume . '/' . $page),
+                        'category' => 'E-Tipitaka',
+                    ];
+                    $countByType['etipitaka'] = ($countByType['etipitaka'] ?? 0) + 1;
+                }
+            } catch (\Throwable $e) {
+                error_log('Search etipitaka error: ' . $e->getMessage());
+            }
+        }
+
+        // 3. Search PDF/DOCX Book Text
         $pdfBooks = PdfBook::getBooks();
         foreach ($pdfBooks as $book) {
             if (($countByType['book-page'] ?? 0) >= self::MAX_PER_TYPE) break;
@@ -60,7 +88,7 @@ class SearchController {
             }
         }
 
-        // 3. Search Books
+        // 4. Search Books
         $books = Book::getAll();
         foreach ($books as $item) {
             if (($countByType['book'] ?? 0) >= self::MAX_PER_TYPE) break;
@@ -76,7 +104,7 @@ class SearchController {
             }
         }
 
-        // 4. Search Videos
+        // 5. Search Videos
         $videos = Video::getAll();
         foreach ($videos as $item) {
             if (($countByType['video'] ?? 0) >= self::MAX_PER_TYPE) break;
@@ -92,7 +120,7 @@ class SearchController {
             }
         }
 
-        // 5. Search Calendar
+        // 6. Search Calendar
         $events = Calendar::getAll();
         foreach ($events as $item) {
             if (($countByType['calendar'] ?? 0) >= self::MAX_PER_TYPE) break;
@@ -105,6 +133,57 @@ class SearchController {
                     'category' => 'ປະຕິທິນ'
                 ];
                 $countByType['calendar'] = ($countByType['calendar'] ?? 0) + 1;
+            }
+        }
+
+        // 7. Search Anakame
+        if (($countByType['anakame'] ?? 0) < self::MAX_PER_TYPE) {
+            $anakameHtml = @file_get_contents('http://anakame.com/page/1_Sutas/main/1_Sutta_number.htm');
+            if ($anakameHtml !== false) {
+                preg_match_all('/<a\s+href="([^"]+)"[^>]*>([^<]+)<\/a>/i', $anakameHtml, $aMatches, PREG_SET_ORDER);
+                $seen = [];
+                foreach ($aMatches as $am) {
+                    if (($countByType['anakame'] ?? 0) >= self::MAX_PER_TYPE) break;
+                    $title = trim(strip_tags($am[2]));
+                    if (empty($title) || !str_contains($am[1], '.htm')) continue;
+                    $normalized = str_replace('../', '', $am[1]);
+                    $normalized = preg_replace('/#.*$/', '', $normalized);
+                    $key = $normalized . '|' . $title;
+                    if (isset($seen[$key])) continue;
+                    $seen[$key] = true;
+                    if ($this->match($q, $title)) {
+                        $results[] = [
+                            'type' => 'anakame',
+                            'title' => $title,
+                            'detail' => 'ອານາຄົມສູດ ພາສາໄທ',
+                            'url' => url('/anakame/read?href=' . urlencode($normalized)),
+                            'category' => 'Anakame',
+                        ];
+                        $countByType['anakame'] = ($countByType['anakame'] ?? 0) + 1;
+                    }
+                }
+            }
+        }
+
+        // 8. Search Uttayarndham
+        if (($countByType['uttayarndham'] ?? 0) < self::MAX_PER_TYPE) {
+            $uttHtml = @file_get_contents('https://uttayarndham.org/dhamma-sharing');
+            if ($uttHtml !== false) {
+                preg_match_all('/<h4><a\s+href="\s+(\/[^"]+)"[^>]*>\s*([^<]+?)\s*<\/a><\/h4>/s', $uttHtml, $uMatches, PREG_SET_ORDER);
+                foreach ($uMatches as $um) {
+                    if (($countByType['uttayarndham'] ?? 0) >= self::MAX_PER_TYPE) break;
+                    $title = trim($um[2]);
+                    if ($this->match($q, $title)) {
+                        $results[] = [
+                            'type' => 'uttayarndham',
+                            'title' => $title,
+                            'detail' => 'ອຸດທະຍານທັມ (ທັມມະ)',
+                            'url' => url('/uttayarndham/read?url=' . urlencode(trim($um[1]))),
+                            'category' => 'Uttayarndham',
+                        ];
+                        $countByType['uttayarndham'] = ($countByType['uttayarndham'] ?? 0) + 1;
+                    }
+                }
             }
         }
 

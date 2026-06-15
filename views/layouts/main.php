@@ -760,7 +760,10 @@
                                               'bg-green-100 text-green-700': result.type === 'book',
                                               'bg-red-100 text-red-700': result.type === 'video',
                                               'bg-purple-100 text-purple-700': result.type === 'calendar',
-                                              'bg-amber-100 text-amber-700': result.type === 'book-page'
+                                              'bg-amber-100 text-amber-700': result.type === 'book-page',
+                                              'bg-emerald-100 text-emerald-700': result.type === 'etipitaka',
+                                              'bg-cyan-100 text-cyan-700': result.type === 'anakame',
+                                              'bg-orange-100 text-orange-700': result.type === 'uttayarndham'
                                           }"
                                           x-html="highlight(result.category)"></span>
                                     <h4 class="text-base sm:text-lg font-bold text-gray-800 font-lao break-words min-w-0" x-html="highlight(result.title)"></h4>
@@ -835,10 +838,7 @@
                     </a>
                     <?php endforeach; ?>
                     <hr class="mx-2 my-2 border-gray-100">
-                    <button @click="if(confirm('ຕ້ອງການລ້າງລາຍການທີ່ຖືກໃຈທັງໝົດ?')) { localStorage.setItem('buddhaword_favorites', '[]'); isMenuOpen = false; window.dispatchEvent(new CustomEvent('sync-complete')); }" class="flex items-center gap-4 py-3 sm:py-4 border-b px-2 rounded-xl w-full text-left transition-colors hover:bg-red-50 text-red-600">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 sm:w-10 sm:h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                        ລ້າງຖືກໃຈ
-                    </button>
+                
                 </div>
             </div>
         </div>
@@ -904,10 +904,7 @@
                         </a>
                     <?php endforeach; ?>
                     <hr class="mx-2 my-1 border-gray-100">
-                    <button @click="if(confirm('ຕ້ອງການລ້າງລາຍການທີ່ຖືກໃຈທັງໝົດ?')) { localStorage.setItem('buddhaword_favorites', '[]'); showMore = false; window.dispatchEvent(new CustomEvent('sync-complete')); }" class="flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 w-full text-left transition-colors Lao-font">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                        ລ້າງຖືກໃຈ
-                    </button>
+                   
                 </div>
             </div>
             <?php endif; ?>
