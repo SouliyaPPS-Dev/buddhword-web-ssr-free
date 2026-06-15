@@ -27,7 +27,8 @@
             if (this.isInFavorites) {
                 favs = favs.filter(f => f.id !== '<?= addslashes(preg_replace('/[[:cntrl:]]/', ' ', $url)) ?>');
             } else {
-                favs.push({ id: '<?= addslashes(preg_replace('/[[:cntrl:]]/', ' ', $url)) ?>', title: '<?= addslashes(preg_replace('/[[:cntrl:]]/', ' ', $title)) ?>', category: 'uttayarndham' });
+                var favUrl = '<?= addslashes(preg_replace('/[[:cntrl:]]/', ' ', url('/uttayarndham/read?url=' . urlencode($url)))) ?>';
+                favs.push({ id: '<?= addslashes(preg_replace('/[[:cntrl:]]/', ' ', $url)) ?>', title: '<?= addslashes(preg_replace('/[[:cntrl:]]/', ' ', $title)) ?>', category: 'uttayarndham', url: favUrl });
             }
             localStorage.setItem('buddhaword_favorites', JSON.stringify(favs));
             this.refreshFavorites();
