@@ -32,8 +32,10 @@ function absoluteUrl($path = '/') {
  
 function canonicalUrl() {
     $siteUrl = getSiteUrl();
-    $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-    return $siteUrl . $uri;
+    $parts = parse_url($_SERVER['REQUEST_URI']);
+    $uri = $parts['path'] ?? '/';
+    $qs = isset($parts['query']) ? '?' . $parts['query'] : '';
+    return $siteUrl . $uri . $qs;
 }
 
 function view($path, $data = []) {
