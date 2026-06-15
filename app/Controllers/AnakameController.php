@@ -101,8 +101,22 @@ class AnakameController {
         $allItems = $this->fetchListing();
         $allHrefs = array_column($allItems, 'href');
         $currentIndex = array_search($href, $allHrefs);
-        $prevHref = $currentIndex !== false && $currentIndex > 0 ? $allItems[$currentIndex - 1]['href'] : null;
-        $nextHref = $currentIndex !== false && $currentIndex < count($allItems) - 1 ? $allItems[$currentIndex + 1]['href'] : null;
+        $prevHref = null;
+        $nextHref = null;
+        if ($currentIndex !== false) {
+            for ($i = $currentIndex - 1; $i >= 0; $i--) {
+                if ($allItems[$i]['href'] !== $href) {
+                    $prevHref = $allItems[$i]['href'];
+                    break;
+                }
+            }
+            for ($i = $currentIndex + 1; $i < count($allItems); $i++) {
+                if ($allItems[$i]['href'] !== $href) {
+                    $nextHref = $allItems[$i]['href'];
+                    break;
+                }
+            }
+        }
 
         return view('pages.anakame.show', [
             'href' => $href,
@@ -148,9 +162,8 @@ class AnakameController {
 
             $normalized = str_replace('../', '', $href);
             $normalized = preg_replace('/#.*$/', '', $normalized);
-            $key = $normalized . '|' . $title;
-            if (isset($seen[$key])) continue;
-            $seen[$key] = true;
+            if (isset($seen[$normalized])) continue;
+            $seen[$normalized] = true;
 
             $items[] = [
                 'href' => $normalized,

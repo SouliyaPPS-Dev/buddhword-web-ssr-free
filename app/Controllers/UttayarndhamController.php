@@ -107,13 +107,26 @@ class UttayarndhamController {
         for ($page = 0; $page <= 5; $page++) {
             $pageItems = $this->fetchPage($page);
             if (empty($pageItems)) break;
-            foreach ($pageItems as $idx => $item) {
-                if ($item['url'] === $url || $item['url'] === '/' . ltrim($url, '/')) {
-                    if ($idx > 0) $prevUrl = $pageItems[$idx - 1]['url'];
-                    if ($idx < count($pageItems) - 1) $nextUrl = $pageItems[$idx + 1]['url'];
-                    break 2;
+            $found = false;
+            for ($idx = 0; $idx < count($pageItems); $idx++) {
+                if ($pageItems[$idx]['url'] === $url) {
+                    for ($p = $idx - 1; $p >= 0; $p--) {
+                        if ($pageItems[$p]['url'] !== $url) {
+                            $prevUrl = $pageItems[$p]['url'];
+                            break;
+                        }
+                    }
+                    for ($n = $idx + 1; $n < count($pageItems); $n++) {
+                        if ($pageItems[$n]['url'] !== $url) {
+                            $nextUrl = $pageItems[$n]['url'];
+                            break;
+                        }
+                    }
+                    $found = true;
+                    break;
                 }
             }
+            if ($found) break;
         }
 
         $content = preg_replace('/<img\s+([^>]*?)src\s*=\s*"((?!https?:|\/\/))([^"]+)"/i', '<img $1src="' . self::BASE_URL . '/$3"', $content);
@@ -144,10 +157,14 @@ class UttayarndhamController {
 
         preg_match_all('/<h4><a\s+href="\s+(\/[^"]+)"[^>]*>\s*([^<]+?)\s*<\/a><\/h4>/s', $html, $matches, PREG_SET_ORDER);
 
+        $seen = [];
         foreach ($matches as $m) {
+            $href = trim($m[1]);
+            if (isset($seen[$href])) continue;
+            $seen[$href] = true;
             $items[] = [
                 'title' => trim($m[2]),
-                'url' => trim($m[1]),
+                'url' => $href,
             ];
         }
 
