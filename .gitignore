@@ -7,3 +7,4 @@ node_modules/
 *.log
 storage/cache/sqlite/*
 storage/tts/*.mp3
+storage/tts/*.json

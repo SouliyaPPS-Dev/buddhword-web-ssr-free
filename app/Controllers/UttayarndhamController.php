@@ -68,6 +68,8 @@ class UttayarndhamController {
         }
 
         $content = strip_tags($content, '<p><br><b><i><u><h2><h3><ul><ol><li><strong><em><a><img><blockquote><table><tr><td><th>');
+        $content = preg_replace('/<img\s+([^>]*?)src\s*=\s*"((?!https?:|\/\/))([^"]+)"/i', '<img $1src="' . self::BASE_URL . '/$3"', $content);
+        $content = preg_replace('/<img\s+([^>]*?)src\s*=\s*\'((?!https?:|\/\/))([^\']+)\'/i', '<img $1src=\'' . self::BASE_URL . '/$3\'', $content);
 
         $this->json([
             'title' => trim(strip_tags($title)),
@@ -113,6 +115,9 @@ class UttayarndhamController {
                 }
             }
         }
+
+        $content = preg_replace('/<img\s+([^>]*?)src\s*=\s*"((?!https?:|\/\/))([^"]+)"/i', '<img $1src="' . self::BASE_URL . '/$3"', $content);
+        $content = preg_replace('/<img\s+([^>]*?)src\s*=\s*\'((?!https?:|\/\/))([^\']+)\'/i', '<img $1src=\'' . self::BASE_URL . '/$3\'', $content);
 
         return view('pages.uttayarndham.show', [
             'title' => trim(strip_tags($title)),
