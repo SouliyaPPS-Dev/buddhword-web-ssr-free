@@ -1,71 +1,77 @@
-<section x-data="{
-    query: '<?= htmlspecialchars($query) ?>',
-    currentCode: '<?= $currentCode ?>',
-    results: [],
-    groupedResults: {},
-    isSearching: false,
-    hasSearched: false,
-    searchTerm: '<?= htmlspecialchars($query) ?>',
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('tipitakaSearch', () => ({
+        query: '<?= htmlspecialchars($query, ENT_QUOTES) ?>',
+        currentCode: '<?= htmlspecialchars($currentCode, ENT_QUOTES) ?>',
+        results: [],
+        groupedResults: {},
+        isSearching: false,
+        hasSearched: false,
+        searchTerm: '<?= htmlspecialchars($query, ENT_QUOTES) ?>',
 
-    init() {
-        if (this.searchTerm.length >= 2) {
-            this.performSearch();
-        }
-    },
+        init() {
+            if (this.searchTerm.length >= 2) {
+                this.performSearch();
+            }
+        },
 
-    highlight(text) {
-        if (!text || !this.searchTerm) return this.escapeHtml(text);
-        const escaped = this.searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const regex = new RegExp('(' + escaped + ')', 'gi');
-        return this.escapeHtml(text).replace(regex, '<span class=\"bg-yellow-200 font-bold text-black px-0.5\">$1</span>');
-    },
+        highlight(text) {
+            if (!text || !this.searchTerm) return this.escapeHtml(text);
+            const escaped = this.searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp('(' + escaped + ')', 'gi');
+            return this.escapeHtml(text).replace(regex, '<span class="bg-yellow-200 font-bold text-black px-0.5">$1</span>');
+        },
 
-    escapeHtml(str) {
-        const div = document.createElement('div');
-        div.textContent = str;
-        return div.innerHTML;
-    },
+        escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        },
 
-    buildExcerpt(content, query) {
-        let cleaned = content.replace(/\t/g, ' ').replace(/\s+/g, ' ').trim();
-        const idx = cleaned.toLowerCase().indexOf(query.toLowerCase());
-        if (idx === -1) {
-            return cleaned.length > 150 ? cleaned.substring(0, 150) + '...' : cleaned;
-        }
-        let start = idx > 60 ? idx - 60 : 0;
-        let end = (idx + query.length + 90) > cleaned.length ? cleaned.length : (idx + query.length + 90);
-        let prefix = start > 0 ? '...' : '';
-        let suffix = end < cleaned.length ? '...' : '';
-        return prefix + this.escapeHtml(cleaned.substring(start, end)) + suffix;
-    },
+        buildExcerpt(content, query) {
+            let cleaned = content.replace(/\t/g, ' ').replace(/\s+/g, ' ').trim();
+            const idx = cleaned.toLowerCase().indexOf(query.toLowerCase());
+            if (idx === -1) {
+                return cleaned.length > 150 ? cleaned.substring(0, 150) + '...' : cleaned;
+            }
+            let start = idx > 60 ? idx - 60 : 0;
+            let end = (idx + query.length + 90) > cleaned.length ? cleaned.length : (idx + query.length + 90);
+            let prefix = start > 0 ? '...' : '';
+            let suffix = end < cleaned.length ? '...' : '';
+            return prefix + this.escapeHtml(cleaned.substring(start, end)) + suffix;
+        },
 
-    async performSearch() {
-        const q = this.searchTerm.trim();
-        if (q.length < 2) return;
-        this.isSearching = true;
-        this.hasSearched = true;
-        try {
-            const resp = await fetch('<?= url('/api/etipitaka/search') ?>?code=' + this.currentCode + '&q=' + encodeURIComponent(q));
-            const data = await resp.json();
-            this.results = data.results || [];
-            this.groupedResults = data.grouped || {};
-        } catch(e) {
-            console.error('Search failed', e);
+        async performSearch() {
+            const q = this.searchTerm.trim();
+            if (q.length < 2) return;
+            this.isSearching = true;
+            this.hasSearched = true;
+            try {
+                const resp = await fetch('<?= url('/api/etipitaka/search') ?>?code=' + this.currentCode + '&q=' + encodeURIComponent(q));
+                const data = await resp.json();
+                this.results = data.results || [];
+                this.groupedResults = data.grouped || {};
+            } catch(e) {
+                console.error('Search failed', e);
+                this.results = [];
+                this.groupedResults = {};
+            } finally {
+                this.isSearching = false;
+            }
+        },
+
+        selectCategory(code) {
+            this.currentCode = code;
+            this.searchTerm = '';
             this.results = [];
             this.groupedResults = {};
-        } finally {
-            this.isSearching = false;
+            this.hasSearched = false;
         }
-    },
+    }));
+});
+</script>
 
-    selectCategory(code) {
-        this.currentCode = code;
-        this.searchTerm = '';
-        this.results = [];
-        this.groupedResults = {};
-        this.hasSearched = false;
-    }
-}" class="flex flex-col items-center px-4 sm:px-6 lg:px-8 page-enter">
+<section x-data="tipitakaSearch" class="flex flex-col items-center px-4 sm:px-6 lg:px-8 page-enter">
 
     <!-- Header -->
     <div class="w-full max-w-4xl mt-4 mb-6">

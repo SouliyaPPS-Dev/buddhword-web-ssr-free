@@ -1,68 +1,74 @@
-<section x-data="{
-    items: <?= json_encode($items, JSON_UNESCAPED_UNICODE) ?>,
-    allItems: <?= json_encode($items, JSON_UNESCAPED_UNICODE) ?>,
-    filteredItems: <?= json_encode($items, JSON_UNESCAPED_UNICODE) ?>,
-    searchQuery: '<?= htmlspecialchars($query) ?>',
-    displayCount: 20,
-    pageSize: 20,
-    isLoadingMore: false,
-    currentPage: 0,
-    hasMore: <?= count($items) >= 20 ? 'true' : 'false' ?>,
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('uttayarndhamSearch', () => ({
+        items: <?= json_encode($items, JSON_UNESCAPED_UNICODE) ?>,
+        allItems: <?= json_encode($items, JSON_UNESCAPED_UNICODE) ?>,
+        filteredItems: <?= json_encode($items, JSON_UNESCAPED_UNICODE) ?>,
+        searchQuery: '<?= htmlspecialchars($query, ENT_QUOTES) ?>',
+        displayCount: 20,
+        pageSize: 20,
+        isLoadingMore: false,
+        currentPage: 0,
+        hasMore: <?= count($items) >= 20 ? 'true' : 'false' ?>,
 
-    get visibleItems() {
-        return this.filteredItems.slice(0, this.displayCount);
-    },
+        get visibleItems() {
+            return this.filteredItems.slice(0, this.displayCount);
+        },
 
-    async loadMore() {
-        if (this.isLoadingMore || !this.hasMore) return;
-        this.isLoadingMore = true;
-        const nextPage = this.currentPage + 1;
-        try {
-            const resp = await fetch('<?= url('/api/uttayarndham/list') ?>?page=' + nextPage);
-            const data = await resp.json();
-            if (data.items && data.items.length > 0) {
-                this.allItems = this.allItems.concat(data.items);
-                this.filteredItems = this.searchQuery.trim()
-                    ? this.allItems.filter(item => item.title.toLowerCase().includes(this.searchQuery.trim().toLowerCase()))
-                    : this.allItems;
-                this.displayCount = this.filteredItems.length;
-                this.currentPage = nextPage;
-                this.hasMore = data.items.length >= 20;
-            } else {
-                this.hasMore = false;
+        async loadMore() {
+            if (this.isLoadingMore || !this.hasMore) return;
+            this.isLoadingMore = true;
+            const nextPage = this.currentPage + 1;
+            try {
+                const resp = await fetch('<?= url('/api/uttayarndham/list') ?>?page=' + nextPage);
+                const data = await resp.json();
+                if (data.items && data.items.length > 0) {
+                    this.allItems = this.allItems.concat(data.items);
+                    this.filteredItems = this.searchQuery.trim()
+                        ? this.allItems.filter(item => item.title.toLowerCase().includes(this.searchQuery.trim().toLowerCase()))
+                        : this.allItems;
+                    this.displayCount = this.filteredItems.length;
+                    this.currentPage = nextPage;
+                    this.hasMore = data.items.length >= 20;
+                } else {
+                    this.hasMore = false;
+                }
+            } catch(e) {
+                console.error('Load more failed', e);
+            } finally {
+                this.isLoadingMore = false;
             }
-        } catch(e) {
-            console.error('Load more failed', e);
-        } finally {
-            this.isLoadingMore = false;
+        },
+
+        filterItems() {
+            const q = this.searchQuery.trim().toLowerCase();
+            if (!q) {
+                this.filteredItems = this.allItems;
+            } else {
+                this.filteredItems = this.allItems.filter(item =>
+                    item.title.toLowerCase().includes(q)
+                );
+            }
+            this.displayCount = this.filteredItems.length;
+        },
+
+        highlight(text) {
+            if (!text || !this.searchQuery.trim()) return this.escapeHtml(text);
+            const escaped = this.searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp('(' + escaped + ')', 'gi');
+            return this.escapeHtml(text).replace(regex, '<span class="bg-yellow-200 font-bold text-black px-0.5">$1</span>');
+        },
+
+        escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
         }
-    },
+    }));
+});
+</script>
 
-    filterItems() {
-        const q = this.searchQuery.trim().toLowerCase();
-        if (!q) {
-            this.filteredItems = this.allItems;
-        } else {
-            this.filteredItems = this.allItems.filter(item =>
-                item.title.toLowerCase().includes(q)
-            );
-        }
-        this.displayCount = this.filteredItems.length;
-    },
-
-    highlight(text) {
-        if (!text || !this.searchQuery.trim()) return this.escapeHtml(text);
-        const escaped = this.searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const regex = new RegExp('(' + escaped + ')', 'gi');
-        return this.escapeHtml(text).replace(regex, '<span class=\"bg-yellow-200 font-bold text-black px-0.5\">$1</span>');
-    },
-
-    escapeHtml(str) {
-        const div = document.createElement('div');
-        div.textContent = str;
-        return div.innerHTML;
-    }
-}" class="flex flex-col items-center px-4 sm:px-6 lg:px-8 page-enter">
+<section x-data="uttayarndhamSearch" class="flex flex-col items-center px-4 sm:px-6 lg:px-8 page-enter">
 
     <!-- Header -->
     <div class="w-full max-w-4xl mt-4 mb-6">

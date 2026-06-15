@@ -1,43 +1,49 @@
-<section x-data="{
-    items: <?= json_encode($items, JSON_UNESCAPED_UNICODE) ?>,
-    filteredItems: <?= json_encode($items, JSON_UNESCAPED_UNICODE) ?>,
-    searchQuery: '<?= htmlspecialchars($query) ?>',
-    displayCount: 20,
-    pageSize: 20,
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('anakameSearch', () => ({
+        items: <?= json_encode($items, JSON_UNESCAPED_UNICODE) ?>,
+        filteredItems: <?= json_encode($items, JSON_UNESCAPED_UNICODE) ?>,
+        searchQuery: '<?= htmlspecialchars($query, ENT_QUOTES) ?>',
+        displayCount: 20,
+        pageSize: 20,
 
-    get visibleItems() {
-        return this.filteredItems.slice(0, this.displayCount);
-    },
+        get visibleItems() {
+            return this.filteredItems.slice(0, this.displayCount);
+        },
 
-    loadMore() {
-        this.displayCount = Math.min(this.displayCount + this.pageSize, this.filteredItems.length);
-    },
+        loadMore() {
+            this.displayCount = Math.min(this.displayCount + this.pageSize, this.filteredItems.length);
+        },
 
-    filterItems() {
-        const q = this.searchQuery.trim().toLowerCase();
-        if (!q) {
-            this.filteredItems = this.items;
-        } else {
-            this.filteredItems = this.items.filter(item =>
-                item.title.toLowerCase().includes(q)
-            );
+        filterItems() {
+            const q = this.searchQuery.trim().toLowerCase();
+            if (!q) {
+                this.filteredItems = this.items;
+            } else {
+                this.filteredItems = this.items.filter(item =>
+                    item.title.toLowerCase().includes(q)
+                );
+            }
+            this.displayCount = 20;
+        },
+
+        highlight(text) {
+            if (!text || !this.searchQuery.trim()) return this.escapeHtml(text);
+            const escaped = this.searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp('(' + escaped + ')', 'gi');
+            return this.escapeHtml(text).replace(regex, '<span class="bg-yellow-200 font-bold text-black px-0.5">$1</span>');
+        },
+
+        escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
         }
-        this.displayCount = 20;
-    },
+    }));
+});
+</script>
 
-    highlight(text) {
-        if (!text || !this.searchQuery.trim()) return this.escapeHtml(text);
-        const escaped = this.searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const regex = new RegExp('(' + escaped + ')', 'gi');
-        return this.escapeHtml(text).replace(regex, '<span class=\"bg-yellow-200 font-bold text-black px-0.5\">$1</span>');
-    },
-
-    escapeHtml(str) {
-        const div = document.createElement('div');
-        div.textContent = str;
-        return div.innerHTML;
-    }
-}" class="flex flex-col items-center px-4 sm:px-6 lg:px-8 page-enter">
+<section x-data="anakameSearch" class="flex flex-col items-center px-4 sm:px-6 lg:px-8 page-enter">
 
     <!-- Header -->
     <div class="w-full max-w-4xl mt-4 mb-6">
