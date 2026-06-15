@@ -38,6 +38,7 @@
             } else {
                 favs.push({
                     id: this.pageId,
+                    title: 'E-Tipitaka - ເຫຼັ້ມທີ່ <?= $volume ?> ຫນ້າ <?= $page ?> (<?= htmlspecialchars($label, ENT_QUOTES) ?>)',
                     label: '<?= htmlspecialchars($label, ENT_QUOTES) ?>',
                     volume: <?= $volume ?>,
                     page: <?= $page ?>,

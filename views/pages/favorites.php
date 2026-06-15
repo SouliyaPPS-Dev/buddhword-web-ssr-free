@@ -12,16 +12,37 @@
             </div>
         </template>
 
-        <template x-for="item in favorites" :key="item.ID">
+        <template x-for="item in favorites" :key="item.ID || item.id || item.href">
             <div class="bg-white rounded-xl sm:rounded-2xl shadow-md overflow-hidden hover:shadow-lg transition-shadow">
                 <div class="p-3 sm:p-4 flex justify-between items-center gap-3 sm:gap-4">
+                    <!-- Sutra items -->
                     <template x-if="item['ຊື່ພຣະສູດ']">
-                        <a :href="'<?= url('/sutra/details/') ?>' + item.ID" class="flex-1 min-w-0">
+                        <a :href="'<?= url('/sutra/details/') ?>' + (item.ID || '')" class="flex-1 min-w-0">
                             <h3 class="text-base sm:text-lg font-bold text-gray-800 leading-tight Lao-font truncate sm:whitespace-normal" x-text="item['ຊື່ພຣະສູດ']"></h3>
                             <p class="text-[10px] sm:text-sm text-gray-500 mt-1 Lao-font" x-text="item['ໝວດທັມ']"></p>
                         </a>
                     </template>
-                    <template x-if="!item['ຊື່ພຣະສູດ']">
+                    <!-- E-Tipitaka items -->
+                    <template x-if="!item['ຊື່ພຣະສູດ'] && item.code">
+                        <a :href="item.url" class="flex-1 min-w-0">
+                            <h3 class="text-base sm:text-lg font-bold text-gray-800 leading-tight Lao-font truncate sm:whitespace-normal" x-text="item.title"></h3>
+                            <p class="text-[10px] sm:text-sm text-gray-500 mt-1 Lao-font">
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-xs">E-Tipitaka</span>
+                                <span class="ml-1" x-text="'ເຫຼັ້ມທີ່ ' + item.volume + ' ຫນ້າ ' + item.page"></span>
+                            </p>
+                        </a>
+                    </template>
+                    <!-- Anakame items -->
+                    <template x-if="!item['ຊື່ພຣະສູດ'] && item.href && !item.code">
+                        <a :href="item.href" class="flex-1 min-w-0">
+                            <h3 class="text-base sm:text-lg font-bold text-gray-800 leading-tight Lao-font truncate sm:whitespace-normal" x-text="item.title"></h3>
+                            <p class="text-[10px] sm:text-sm text-gray-500 mt-1 Lao-font">
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-xs">ອະນະຄຳ</span>
+                            </p>
+                        </a>
+                    </template>
+                    <!-- PDF Book items -->
+                    <template x-if="!item['ຊື່ພຣະສູດ'] && !item.code && !item.href && item.url">
                         <a :href="item.url" class="flex-1 min-w-0">
                             <h3 class="text-base sm:text-lg font-bold text-gray-800 leading-tight Lao-font truncate sm:whitespace-normal" x-text="item.title"></h3>
                             <p class="text-[10px] sm:text-sm text-gray-500 mt-1 Lao-font">
@@ -29,9 +50,18 @@
                             </p>
                         </a>
                     </template>
+                    <!-- Uttayarndham items -->
+                    <template x-if="!item['ຊື່ພຣະສູດ'] && !item.code && !item.href && !item.url">
+                        <a :href="item.id ? '/' + item.id : '#'" class="flex-1 min-w-0">
+                            <h3 class="text-base sm:text-lg font-bold text-gray-800 leading-tight Lao-font truncate sm:whitespace-normal" x-text="item.title"></h3>
+                            <p class="text-[10px] sm:text-sm text-gray-500 mt-1 Lao-font">
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 text-xs">ອຸດທະຍອນທັມ</span>
+                            </p>
+                        </a>
+                    </template>
                     
                     <div class="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-                        <button @click="favorites = favorites.filter(f => f.ID !== item.ID); localStorage.setItem('buddhaword_favorites', JSON.stringify(favorites))" class="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-colors">
+                        <button @click="favorites = favorites.filter(function(f) { return (f.ID || f.id || f.href) !== (item.ID || item.id || item.href); }); localStorage.setItem('buddhaword_favorites', JSON.stringify(favorites))" class="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-colors">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.657 0L10 6.343l1.172-1.171a4 4 0 115.657 5.657L10 18.343l-8.686-8.686a4 4 0 010-5.657z" clip-rule="evenodd" />
                             </svg>
