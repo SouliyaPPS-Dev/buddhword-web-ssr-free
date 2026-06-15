@@ -184,6 +184,8 @@ function toggleTTS() {
         return '<span class="tts-w">' + m + '</span>';
     });
 
+    ttsPaused = false;
+    ttsPlaying = true;
     ttsLang = lang;
     ttsPlaybackRate = (lang === 'th-TH' || lang === 'lo-LA') ? 0.8 : 1.0;
     updateTTSIcon();
