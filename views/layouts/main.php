@@ -814,9 +814,11 @@
                     ['href' => '/book', 'icon' => 'book.png', 'label' => 'ປື້ມ'],
                     ['href' => '/video', 'icon' => 'vdo.png', 'label' => 'Video'],
                     ['href' => '/calendar', 'icon' => 'calendar.png', 'label' => 'ປະຕິທິນ'],
+                    ['href' => '/etipitaka', 'icon' => 'dhamma.png', 'label' => 'E-Tipitaka'],
+                    ['href' => '/anakame', 'icon' => 'book.png', 'label' => 'Anakame (ພາສາໄທ)'],
+                    ['href' => '/uttayarndham', 'icon' => 'dhamma.png', 'label' => 'Uttayarndham (ທັມມະ)'],
                     ['href' => 'https://buddhaword.notion.site/4d1689680be74b6f96071c8dda16db9e', 'icon' => 'dhamma.png', 'label' => 'ພຣະທັມ', 'external' => true],
-                    // ['href' => '/upload', 'icon' => 'book.png', 'label' => 'ຈັດການປຶ້ມ'],
-                ['href' => '/about', 'icon' => 'about.png', 'label' => 'ຕິດຕໍ່'],
+                    ['href' => '/about', 'icon' => 'about.png', 'label' => 'ຕິດຕໍ່'],
                 ];
                 foreach ($mobileMenuItems as $item):
                     $mIsActive = ($item['external'] ?? false) ? false : ($item['href'] === '/'
@@ -849,7 +851,7 @@
              title="ກຳລັງໃຊ້ງານແບບອອບລາຍ"></div>
 
         <!-- Bottom Navigation -->
-        <div id="bottomNav" class="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-[#DDCFBC]/95 backdrop-blur-md rounded-2xl shadow-xl flex items-center p-1.5 gap-1 z-30 border border-white/20 transition-all duration-300 opacity-100 visible translate-y-0">
+        <div id="bottomNav" x-data="{ showMore: false }" class="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-[#DDCFBC]/95 backdrop-blur-md rounded-2xl shadow-xl flex items-center p-1.5 gap-1 z-30 border border-white/20 transition-all duration-300 opacity-100 visible translate-y-0">
             <?php
             $navItems = [
                 ['href' => '/', 'icon' => 'sutra.png', 'label' => 'ພຣະສູດ'],
@@ -858,10 +860,16 @@
                 ['href' => '/book', 'icon' => 'book.png', 'label' => 'ປື້ມ'],
                 ['href' => '/video', 'icon' => 'vdo.png', 'label' => 'Video'],
                 ['href' => '/calendar', 'icon' => 'calendar.png', 'label' => 'ປະຕິທິນ'],
-                ['href' => 'https://buddhaword.notion.site/4d1689680be74b6f96071c8dda16db9e', 'icon' => 'dhamma.png', 'label' => 'ພຣະທັມ', 'external' => true],
-                // ['href' => '/about', 'icon' => 'about.png', 'label' => 'ຕິດຕໍ່'],
+                ['href' => '/etipitaka', 'icon' => 'dhamma.png', 'label' => 'E-Tipitaka'],
+                ['href' => '/anakame', 'icon' => 'book.png', 'label' => 'Anakame'],
+                ['href' => '/uttayarndham', 'icon' => 'dhamma.png', 'label' => 'Uttayarndham'],
+                ['href' => 'https://buddhaword.notion.site/4d1689680be74b6f96071c8dda16db9e', 'icon' => 'dhamma.png', 'label' => 'ພຣະທັມ', 'external' => true, 'more' => true],
+                ['href' => '/about', 'icon' => 'about.png', 'label' => 'ຕິດຕໍ່'],
             ];
-            foreach ($navItems as $item): 
+            $maxVisible = 6;
+            $visibleItems = array_slice($navItems, 0, $maxVisible);
+            $moreItems = array_slice($navItems, $maxVisible);
+            foreach ($visibleItems as $item): 
                 $isActive = ($item['external'] ?? false) ? false : ($item['href'] === '/'
                     ? ($currentUri === url('/') || $currentUri === url('') || strpos($currentUri, url('/sutra/')) === 0)
                     : strpos($currentUri, url($item['href'])) !== false);
@@ -875,6 +883,24 @@
                     <span class="text-[9px] sm:text-[10px] font-bold mt-0.5"><?= $item['label'] ?></span>
                 </a>
             <?php endforeach; ?>
+            <?php if (!empty($moreItems)): ?>
+            <div class="relative">
+                <button @click="showMore = !showMore" @click.outside="showMore = false" class="flex flex-col items-center justify-center p-1.5 sm:p-2 rounded-xl transition-all duration-200 min-w-[46px] sm:min-w-[65px] text-[#795548] hover:bg-[#c9bba7]" aria-label="More menus">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" /></svg>
+                    <span class="text-[9px] sm:text-[10px] font-bold mt-0.5">More</span>
+                </button>
+                <div x-show="showMore" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95" class="absolute bottom-full right-0 mb-2 bg-white/95 backdrop-blur-md rounded-xl shadow-xl border border-gray-100 py-1 min-w-[180px]" style="display: none;">
+                    <?php foreach ($moreItems as $item):
+                        $isActive = ($item['external'] ?? false) ? false : strpos($currentUri, url($item['href'])) !== false;
+                    ?>
+                        <a href="<?= $item['external'] ?? false ? $item['href'] : url($item['href']) ?>" <?= ($item['external'] ?? false) ? 'target="_blank" rel="noopener noreferrer"' : '' ?> @click="showMore = false" class="flex items-center gap-2 px-4 py-2.5 text-sm <?= $isActive ? 'text-[#795548] font-bold bg-gray-50' : 'text-gray-700 hover:bg-gray-50' ?> transition-colors Lao-font">
+                            <img src="<?= url('assets/icons/' . $item['icon']) ?>" alt="" class="w-5 h-5" loading="lazy" width="20" height="20" decoding="async">
+                            <?= $item['label'] ?>
+                        </a>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            <?php endif; ?>
         </div>
 
         <!-- Scroll to Top -->
