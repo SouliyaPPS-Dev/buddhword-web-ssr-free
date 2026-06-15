@@ -11,9 +11,9 @@
         <div class="bg-[#795548] text-white px-4 sm:px-6 py-3">
             <h1 class="text-lg sm:text-xl font-bold Lao-font"><?= htmlspecialchars($title) ?></h1>
         </div>
-        <div class="p-4 sm:p-6 Lao-font text-base leading-relaxed break-words" style="font-family: 'Phetsarath', 'Noto Sans Lao', sans-serif;">
+        <div class="p-4 sm:p-6 Lao-font text-base leading-relaxed break-words whitespace-pre-wrap" style="font-family: 'Phetsarath', 'Noto Sans Lao', sans-serif;">
             <?php if ($content): ?>
-                <?= $content ?>
+                <?= htmlspecialchars($content) ?>
             <?php else: ?>
                 <p class="text-gray-500">ບໍ່ສາມາດໂຫຼດເນື້ອຫາໄດ້</p>
             <?php endif; ?>

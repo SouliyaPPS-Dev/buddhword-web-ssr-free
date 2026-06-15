@@ -2,7 +2,7 @@
 namespace App\Controllers;
 
 class AnakameController {
-    private const BASE_URL = 'http://anakame.com/page/1_Sutas/main';
+    private const BASE_URL = 'http://anakame.com/page/1_Sutas';
 
     public function index() {
         $items = $this->fetchListing();
@@ -52,10 +52,10 @@ class AnakameController {
 
     public function apiContent() {
         $url = $_GET['url'] ?? '';
-        $number = $_GET['number'] ?? '';
+        $path = $_GET['path'] ?? '';
 
-        if ($number) {
-            $url = self::BASE_URL . '/' . $number . '.htm';
+        if ($path) {
+            $url = self::BASE_URL . '/' . ltrim($path, '/');
         }
 
         if (!$url) {
@@ -71,11 +71,8 @@ class AnakameController {
             return;
         }
 
-        preg_match('/<div class="main">(.*?)<\/div>/s', $html, $matches);
-        $content = $matches[1] ?? '';
-
-        preg_match('/<title>(.*?)<\/title>/s', $html, $titleMatches);
-        $title = $titleMatches[1] ?? 'ອານາຄົມສູດ';
+        $content = $this->extractContent($html);
+        $title = $this->extractTitle($html);
 
         $this->json([
             'title' => trim($title),
@@ -85,26 +82,24 @@ class AnakameController {
     }
 
     public function read() {
-        $number = $_GET['number'] ?? '';
-        if (!$number) {
+        $href = $_GET['href'] ?? '';
+        if (!$href) {
             header('Location: ' . url('/anakame'));
             exit;
         }
 
-        $url = self::BASE_URL . '/' . $number . '.htm';
+        $url = self::BASE_URL . '/' . ltrim($href, '/');
         $html = @file_get_contents($url);
         $content = '';
         $title = 'ອານາຄົມສູດ';
 
         if ($html !== false) {
-            preg_match('/<div class="main">(.*?)<\/div>/s', $html, $matches);
-            $content = $matches[1] ?? '';
-            preg_match('/<title>(.*?)<\/title>/s', $html, $titleMatches);
-            $title = $titleMatches[1] ?? 'ອານາຄົມສູດ';
+            $content = $this->extractContent($html);
+            $title = $this->extractTitle($html);
         }
 
         return view('pages.anakame.show', [
-            'number' => $number,
+            'href' => $href,
             'content' => $content,
             'title' => trim($title),
             'seo' => [
@@ -114,25 +109,44 @@ class AnakameController {
         ]);
     }
 
+    private function extractContent($html): string {
+        $html = preg_replace('/<script[^>]*>.*?<\/script>/si', '', $html);
+        $html = preg_replace('/<style[^>]*>.*?<\/style>/si', '', $html);
+        $html = preg_replace('/<br\s*\/?>/i', "\n", $html);
+        $html = preg_replace('/<\/(p|div|tr|h[1-6])>/i', "\n", $html);
+        $text = html_entity_decode(strip_tags($html), ENT_QUOTES, 'UTF-8');
+        $text = preg_replace('/[ \t]+/', ' ', $text);
+        $text = preg_replace('/\n\s*\n/', "\n\n", $text);
+        return trim($text);
+    }
+
+    private function extractTitle($html): string {
+        preg_match('/<title>(.*?)<\/title>/si', $html, $m);
+        return $m[1] ?? 'ອານາຄົມສູດ';
+    }
+
     private function fetchListing(): array {
-        $html = @file_get_contents(self::BASE_URL . '/1_Sutta_number.htm');
+        $html = @file_get_contents(self::BASE_URL . '/main/1_Sutta_number.htm');
         if ($html === false) return [];
 
         $items = [];
         preg_match_all('/<a\s+href="([^"]+)"[^>]*>([^<]+)<\/a>/i', $html, $matches, PREG_SET_ORDER);
+        $seen = [];
 
         foreach ($matches as $m) {
-            $href = $m[1];
+            $href = trim($m[1]);
             $title = trim(strip_tags($m[2]));
-            if (empty($title) || $title === '') continue;
+            if (empty($title) || $title === '' || !str_contains($href, '.htm')) continue;
 
-            preg_match('/(\d+)_/', $href, $numMatch);
-            $number = $numMatch[1] ?? '';
+            $normalized = str_replace('../', '', $href);
+            $normalized = preg_replace('/#.*$/', '', $normalized);
+            $key = $normalized . '|' . $title;
+            if (isset($seen[$key])) continue;
+            $seen[$key] = true;
 
             $items[] = [
-                'number' => $number,
+                'href' => $normalized,
                 'title' => $title,
-                'url' => self::BASE_URL . '/' . $href,
             ];
         }
 

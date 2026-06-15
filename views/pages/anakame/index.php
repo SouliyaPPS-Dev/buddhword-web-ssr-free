@@ -70,11 +70,11 @@ document.addEventListener('alpine:init', () => {
     <!-- Items Grid -->
     <div class="w-full max-w-3xl mb-20">
         <div class="grid gap-2">
-            <template x-for="(item, index) in visibleItems" :key="item.number">
-                <a :href="'<?= url('/anakame/read') ?>?number=' + item.number"
+            <template x-for="(item, index) in visibleItems" :key="item.href + index">
+                <a :href="'<?= url('/anakame/read') ?>?href=' + encodeURIComponent(item.href)"
                    class="bg-white/95 backdrop-blur-md hover:bg-white rounded-xl px-4 py-3 shadow-md transition-all hover:shadow-lg flex items-center gap-3">
                     <span class="flex-shrink-0 w-8 h-8 rounded-full bg-[#795548] text-white flex items-center justify-center text-xs font-bold"
-                          x-text="item.number"></span>
+                          x-text="index + 1"></span>
                     <span class="text-sm font-medium text-gray-800 Lao-font" x-html="highlight(item.title)"></span>
                 </a>
             </template>

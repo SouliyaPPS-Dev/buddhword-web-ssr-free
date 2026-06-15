@@ -15,6 +15,26 @@ document.addEventListener('alpine:init', () => {
             return this.filteredItems.slice(0, this.displayCount);
         },
 
+        init() {
+            this.$nextTick(() => this.setupScroll());
+            this.$watch('searchQuery', () => {
+                this.$nextTick(() => this.setupScroll());
+            });
+        },
+
+        setupScroll() {
+            const observer = new IntersectionObserver((entries) => {
+                const sentinel = document.getElementById('scroll-sentinel');
+                if (entries[0].isIntersecting && sentinel?.dataset.active === 'true') {
+                    this.loadMore();
+                }
+            }, { rootMargin: '200px' });
+            this.$nextTick(() => {
+                const sentinel = document.getElementById('scroll-sentinel');
+                if (sentinel) observer.observe(sentinel);
+            });
+        },
+
         async loadMore() {
             if (this.isLoadingMore || !this.hasMore) return;
             this.isLoadingMore = true;
@@ -105,7 +125,7 @@ document.addEventListener('alpine:init', () => {
             </template>
         </div>
 
-        <!-- Load More -->
+        <!-- Load More / Infinite Scroll Sentinel -->
         <div x-show="hasMore && !searchQuery.trim()" class="text-center mt-4">
             <button @click="loadMore()"
                     x-show="!isLoadingMore"
@@ -115,6 +135,7 @@ document.addEventListener('alpine:init', () => {
             <div x-show="isLoadingMore" class="flex justify-center p-4">
                 <div class="loader"></div>
             </div>
+            <div id="scroll-sentinel" data-active="true" class="h-1"></div>
         </div>
 
         <!-- Empty -->

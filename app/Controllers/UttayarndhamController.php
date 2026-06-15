@@ -29,9 +29,14 @@ class UttayarndhamController {
         $page = max(0, intval($_GET['page'] ?? 0));
         $items = $this->fetchPage($page);
 
+        $nextItems = $this->fetchPage($page + 1);
+        $hasMore = count($nextItems) > 0;
+
         $this->json([
             'items' => $items,
             'page' => $page,
+            'total' => ($page * 20) + count($items),
+            'hasMore' => $hasMore,
         ]);
     }
 
