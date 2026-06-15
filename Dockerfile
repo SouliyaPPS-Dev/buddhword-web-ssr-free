@@ -8,6 +8,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 RUN a2enmod rewrite
+RUN echo 'memory_limit = 256M' > /usr/local/etc/php/conf.d/memory.ini
 
 RUN echo '<VirtualHost *:7860>' > /etc/apache2/sites-available/000-default.conf \
     && echo '  DocumentRoot /var/www/html/public' >> /etc/apache2/sites-available/000-default.conf \
@@ -29,7 +30,11 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction
 
 COPY . .
 
-RUN mkdir -p storage/cache storage/tmp storage/tts && chmod -R 777 storage
+RUN mkdir -p storage/cache/sqlite storage/tmp storage/tts && chmod -R 777 storage
+RUN for f in databases/*.sqlite.gz; do \
+      code=$(basename "$f" .sqlite.gz); \
+      php -d memory_limit=256M -r "file_put_contents('storage/cache/sqlite/${code}.sqlite', gzdecode(file_get_contents('databases/${code}.sqlite.gz')));"; \
+    done
 
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh

@@ -14,7 +14,12 @@ class EtipitakaController {
         $groupedResults = [];
 
         if ($query && mb_strlen($query) >= 2) {
-            $results = EtipitakaService::search($currentCode, $query);
+            try {
+                $results = EtipitakaService::search($currentCode, $query);
+            } catch (\Throwable $e) {
+                error_log('Etipitaka index search error: ' . $e->getMessage());
+                $results = [];
+            }
             foreach ($results as $r) {
                 $vol = (int)$r['volume'];
                 if (!isset($groupedResults[$vol])) $groupedResults[$vol] = [];
@@ -50,7 +55,13 @@ class EtipitakaController {
             return;
         }
 
-        $results = EtipitakaService::search($code, $query);
+        try {
+            $results = EtipitakaService::search($code, $query);
+        } catch (\Throwable $e) {
+            error_log('Etipitaka search error: ' . $e->getMessage());
+            $this->json(['results' => [], 'error' => 'Search failed']);
+            return;
+        }
         $items = [];
         foreach ($results as $r) {
             $volume = (int)$r['volume'];

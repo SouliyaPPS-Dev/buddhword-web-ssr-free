@@ -48,15 +48,33 @@ class EtipitakaService {
         $gzPath = self::$dbDir . $code . '.sqlite.gz';
         if (!file_exists($gzPath)) return null;
         $cacheDir = __DIR__ . '/../../storage/cache/sqlite/';
-        if (!is_dir($cacheDir)) mkdir($cacheDir, 0755, true);
+        if (!is_dir($cacheDir)) {
+            @mkdir($cacheDir, 0755, true);
+            if (!is_dir($cacheDir)) {
+                error_log('EtipitakaService: cannot create cache dir ' . $cacheDir);
+                return null;
+            }
+        }
         $dbPath = $cacheDir . $code . '.sqlite';
         if (file_exists($dbPath) && filemtime($dbPath) >= filemtime($gzPath)) {
             return $dbPath;
         }
-        $gzData = file_get_contents($gzPath);
-        $data = gzdecode($gzData);
-        if ($data === false) return null;
-        file_put_contents($dbPath, $data);
+        try {
+            $gzData = file_get_contents($gzPath);
+            if ($gzData === false) {
+                error_log('EtipitakaService: cannot read ' . $gzPath);
+                return null;
+            }
+            $data = gzdecode($gzData);
+            if ($data === false) {
+                error_log('EtipitakaService: gzdecode failed for ' . $gzPath);
+                return null;
+            }
+            file_put_contents($dbPath, $data);
+        } catch (\Throwable $e) {
+            error_log('EtipitakaService: decompression error: ' . $e->getMessage());
+            return null;
+        }
         return $dbPath;
     }
 
