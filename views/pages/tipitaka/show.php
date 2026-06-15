@@ -217,6 +217,27 @@ class="relative overflow-hidden min-h-screen pb-20" style="touch-action: manipul
                         <h1 class="text-xl sm:text-2xl md:text-3xl font-bold leading-tight Lao-font"><?= htmlspecialchars($label) ?></h1>
                         <p class="text-white/80 mt-1 text-xs sm:text-base Lao-font">ເຫຼັ້ມທີ່ <?= $volume ?> ຫນ້າ <?= $page ?></p>
                     </div>
+                    <div x-data="{ open: false, vol: <?= $volume ?>, pg: <?= $page ?>, go() { if (this.vol && this.pg && this.pg >= 1) { window.location.href = '<?= url('/etipitaka/' . $code) ?>/' + this.vol + '/' + this.pg; } } }" class="relative flex-shrink-0">
+                        <button @click="open = !open" class="flex items-center gap-1 px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white/80 hover:text-white transition-colors text-xs sm:text-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" /></svg>
+                            <span class="hidden sm:inline Lao-font">ກະໂດດ</span>
+                        </button>
+                        <div x-show="open" @click.away="open = false" x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" class="absolute right-0 top-full mt-2 bg-white rounded-xl shadow-xl border border-gray-100 p-3 min-w-[200px] z-30" style="display: none;">
+                            <div class="flex flex-col gap-2">
+                                <label class="text-xs text-gray-500 Lao-font">ເຫຼັ້ມທີ່</label>
+                                <select x-model="vol" class="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-sm text-gray-800 bg-white focus:border-[#795548] focus:ring-1 focus:ring-[#795548] outline-none">
+                                    <template x-for="v in <?= json_encode($volumes) ?>" :key="v">
+                                        <option :value="v" x-text="'ເຫຼັ້ມທີ່ ' + v"></option>
+                                    </template>
+                                </select>
+                                <label class="text-xs text-gray-500 Lao-font">ໜ້າ</label>
+                                <div class="flex gap-1">
+                                    <input x-model.number="pg" type="number" min="1" @keydown.enter="go()" class="flex-1 w-20 px-2 py-1.5 border border-gray-200 rounded-lg text-sm text-gray-800 bg-white focus:border-[#795548] focus:ring-1 focus:ring-[#795548] outline-none" placeholder="ເລກໜ້າ">
+                                    <button @click="go()" class="px-3 py-1.5 bg-[#795548] text-white rounded-lg text-sm font-bold hover:bg-[#5E412D] transition-colors Lao-font">ໄປ</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="flex justify-between items-center mt-3">
                     <div class="flex items-center gap-1 sm:gap-2">

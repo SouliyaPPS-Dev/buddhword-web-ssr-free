@@ -123,6 +123,7 @@ class EtipitakaController {
         $label = EtipitakaService::getLabel($code);
         $prevPage = $page > 1 ? $page - 1 : null;
         $nextPage = $page < $totalPages ? $page + 1 : null;
+        $volumes = EtipitakaService::getVolumes($code);
 
         return view('pages.tipitaka.show', [
             'content' => $content,
@@ -133,6 +134,7 @@ class EtipitakaController {
             'prevPage' => $prevPage,
             'nextPage' => $nextPage,
             'totalPages' => $totalPages,
+            'volumes' => $volumes,
             'seo' => [
                 'title' => 'E-Tipitaka - ເຫຼັ້ມທີ່ ' . $volume . ' ຫນ້າ ' . $page . ' (' . $label . ')',
                 'description' => 'ພຣະໄຕຣປິດກ ເຫຼັ້ມທີ່ ' . $volume . ' ຫນ້າ ' . $page,
