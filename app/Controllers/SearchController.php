@@ -7,13 +7,23 @@ use App\Models\Video;
 use App\Models\Calendar;
 use App\Models\PdfBook;
 use App\Services\EtipitakaService;
-   
+
 class SearchController {
     private const MAX_PER_TYPE = 20;
     private const MAX_TOTAL = 100;
 
-    private static function getStreamContext() {
-        return stream_context_create(['http' => ['timeout' => 5]]);
+    private const ANAKAME_CATEGORIES = [
+        'Sutta'       => 'http://anakame.com/page/1_Sutas/main/1_Sutta.htm',
+        'Sutta Set'   => 'http://anakame.com/page/4_Suta_Set/Main/Main_Set01.htm',
+        'Short Sutta' => 'http://anakame.com/page/4_Short_Sutta.htm',
+        'Person'      => 'http://anakame.com/page/7_person.htm',
+        'Misc'        => 'http://anakame.com/page/8_Misc.htm',
+    ];
+
+    private const UTTAYARNDHAM_BASE = 'https://uttayarndham.org';
+
+    private static function getStreamContext(int $timeout = 5) {
+        return stream_context_create(['http' => ['timeout' => $timeout]]);
     }
 
     public function search() {
@@ -27,7 +37,16 @@ class SearchController {
         }
 
         $results = [];
-        $countByType = [];
+        $countByType = [
+            'sutra' => 0,
+            'etipitaka' => 0,
+            'book-page' => 0,
+            'book' => 0,
+            'video' => 0,
+            'calendar' => 0,
+            'anakame' => 0,
+            'uttayarndham' => 0,
+        ];
 
         // 1. Search Sutras
         $sutras = Sutra::getAll();
@@ -45,30 +64,31 @@ class SearchController {
             }
         }
 
-        // 2. Search E-Tipitaka
-        $etipitakaCodes = ['thai', 'thaimm'];
-        foreach ($etipitakaCodes as $code) {
+        // 2. Search E-Tipitaka (all databases)
+        $etipitakaCodes = EtipitakaService::getCategories();
+        foreach ($etipitakaCodes as $cat) {
+            $code = $cat['code'];
             if (($countByType['etipitaka'] ?? 0) >= self::MAX_PER_TYPE) break;
             try {
-                $etResults = EtipitakaService::search($code, $q, 10);
+                $etResults = EtipitakaService::search($code, $q, 5);
                 foreach ($etResults as $er) {
                     if (($countByType['etipitaka'] ?? 0) >= self::MAX_PER_TYPE) break;
                     $volume = (int)$er['volume'];
                     $page = (int)$er['page'];
                     $content = trim(preg_replace('/\s+/', ' ', $er['content'] ?? ''));
                     $detail = mb_strlen($content) > 150 ? mb_substr($content, 0, 150) . '...' : $content;
-                    $label = EtipitakaService::getLabel($code);
+                    $label = $cat['label'];
                     $results[] = [
                         'type' => 'etipitaka',
                         'title' => 'ເຫຼັ້ມທີ່ ' . $volume . ' ຫນ້າ ' . $page . ' (' . $label . ')',
                         'detail' => $detail,
                         'url' => url('/etipitaka/' . $code . '/' . $volume . '/' . $page),
-                        'category' => 'E-Tipitaka',
+                        'category' => $label,
                     ];
                     $countByType['etipitaka'] = ($countByType['etipitaka'] ?? 0) + 1;
                 }
             } catch (\Throwable $e) {
-                error_log('Search etipitaka error: ' . $e->getMessage());
+                error_log('Search etipitaka error (' . $code . '): ' . $e->getMessage());
             }
         }
 
@@ -140,59 +160,122 @@ class SearchController {
             }
         }
 
-        // 7. Search Anakame
+        // 7. Search Anakame (all 5 categories)
         if (($countByType['anakame'] ?? 0) < self::MAX_PER_TYPE) {
-            $anakameHtml = @file_get_contents('http://anakame.com/page/1_Sutas/main/1_Sutta_number.htm', false, self::getStreamContext());
-            if ($anakameHtml !== false) {
-                preg_match_all('/<a\s+href="([^"]+)"[^>]*>([^<]+)<\/a>/i', $anakameHtml, $aMatches, PREG_SET_ORDER);
-                $seen = [];
-                foreach ($aMatches as $am) {
-                    if (($countByType['anakame'] ?? 0) >= self::MAX_PER_TYPE) break;
-                    $title = trim(strip_tags($am[2]));
-                    if (empty($title) || !str_contains($am[1], '.htm')) continue;
-                    $normalized = str_replace('../', '', $am[1]);
-                    $normalized = preg_replace('/#.*$/', '', $normalized);
-                    $key = $normalized . '|' . $title;
-                    if (isset($seen[$key])) continue;
-                    $seen[$key] = true;
+            $allItems = [];
+            $seen = [];
+            $siteUp = true;
+
+            foreach (self::ANAKAME_CATEGORIES as $catName => $catUrl) {
+                if (!$siteUp) break;
+                $html = @file_get_contents($catUrl, false, self::getStreamContext(3));
+                if ($html === false) {
+                    if ($catName === 'Sutta') $siteUp = false;
+                    continue;
+                }
+
+                preg_match_all('/<a\s+href="([^"]+)"[^>]*>(.*?)<\/a>/i', $html, $matches, PREG_SET_ORDER);
+                foreach ($matches as $m) {
+                    $href = trim($m[1]);
+                    $inner = $m[2];
+                    if (str_contains($inner, '<img') || empty(trim(strip_tags($inner)))) continue;
+                    if ($href === '#' || str_starts_with($href, 'javascript')) continue;
+                    if (str_contains($href, 'index.htm') || str_contains($href, 'favicon')) continue;
+                    if (!str_contains($href, '.htm') && !str_contains($href, '.html')) continue;
+
+                    $title = trim(strip_tags($inner));
+                    $title = preg_replace('/\s+/', ' ', $title);
+                    if (mb_strlen($title) < 3) continue;
+
+                    if (isset($seen[$href])) continue;
+                    $seen[$href] = true;
+
                     if ($this->match($q, $title)) {
-                        $results[] = [
-                            'type' => 'anakame',
+                        $allItems[] = [
                             'title' => $title,
-                            'detail' => 'Anakame ພາສາໄທ',
-                            'url' => url('/anakame/read?href=' . urlencode($normalized)),
-                            'category' => 'Anakame',
+                            'href' => self::resolveAnakameUrl($href, $catUrl),
+                            'category' => $catName,
                         ];
-                        $countByType['anakame'] = ($countByType['anakame'] ?? 0) + 1;
                     }
                 }
             }
+
+            foreach ($allItems as $item) {
+                if (($countByType['anakame'] ?? 0) >= self::MAX_PER_TYPE) break;
+                $results[] = [
+                    'type' => 'anakame',
+                    'title' => $item['title'],
+                    'detail' => 'Anakame (' . $item['category'] . ')',
+                    'url' => url('/anakame/read?href=' . urlencode($item['href'])),
+                    'category' => 'Anakame',
+                ];
+                $countByType['anakame'] = ($countByType['anakame'] ?? 0) + 1;
+            }
         }
 
-        // 8. Search Uttayarndham
+        // 8. Search Uttayarndham (keyword/tags all pages)
         if (($countByType['uttayarndham'] ?? 0) < self::MAX_PER_TYPE) {
-            $uttHtml = @file_get_contents('https://uttayarndham.org/dhamma-sharing', false, self::getStreamContext());
-            if ($uttHtml !== false) {
-                preg_match_all('/<h4><a\s+href="\s+(\/[^"]+)"[^>]*>\s*([^<]+?)\s*<\/a><\/h4>/s', $uttHtml, $uMatches, PREG_SET_ORDER);
-                foreach ($uMatches as $um) {
-                    if (($countByType['uttayarndham'] ?? 0) >= self::MAX_PER_TYPE) break;
-                    $title = trim($um[2]);
-                    if ($this->match($q, $title)) {
-                        $results[] = [
-                            'type' => 'uttayarndham',
-                            'title' => $title,
-                            'detail' => 'ອຸດທະຍານທັມ (ທັມມະ)',
-                            'url' => url('/uttayarndham/read?url=' . urlencode(trim($um[1]))),
-                            'category' => 'Uttayarndham',
-                        ];
-                        $countByType['uttayarndham'] = ($countByType['uttayarndham'] ?? 0) + 1;
+            $allTags = [];
+            $seen = [];
+            $page = 0;
+            $maxPages = 5;
+
+            while ($page < $maxPages) {
+                $tagUrl = self::UTTAYARNDHAM_BASE . '/keyword/tags' . ($page > 0 ? '?page=' . $page : '');
+                $html = @file_get_contents($tagUrl, false, self::getStreamContext(5));
+                if ($html === false) break;
+
+                preg_match_all('/<a\s+href="(\/taxonomy\/term\/\d+)"[^>]*>\s*([^<]+?)\s*<\/a>/s', $html, $matches, PREG_SET_ORDER);
+
+                $foundNew = false;
+                foreach ($matches as $m) {
+                    $name = trim($m[2]);
+                    $href = trim($m[1]);
+                    if (!empty($name) && !isset($seen[$href])) {
+                        $seen[$href] = true;
+                        if ($this->match($q, $name)) {
+                            $allTags[] = [
+                                'title' => $name,
+                                'url' => $href,
+                            ];
+                        }
+                        $foundNew = true;
                     }
                 }
+
+                $hasMore = preg_match('/rel="next"/', $html) === 1;
+                if (!$hasMore || !$foundNew) break;
+                $page++;
+            }
+
+            foreach ($allTags as $tag) {
+                if (($countByType['uttayarndham'] ?? 0) >= self::MAX_PER_TYPE) break;
+                $results[] = [
+                    'type' => 'uttayarndham',
+                    'title' => $tag['title'],
+                    'detail' => 'ອຸດທະຍານທັມ (ທັມມະ)',
+                    'url' => url('/uttayarndham/tag?url=' . urlencode($tag['url'])),
+                    'category' => 'Uttayarndham',
+                ];
+                $countByType['uttayarndham'] = ($countByType['uttayarndham'] ?? 0) + 1;
             }
         }
 
         header('Content-Type: application/json');
-        echo json_encode(array_slice($results, 0, self::MAX_TOTAL), JSON_UNESCAPED_UNICODE);
+        echo json_encode([
+            'results' => array_slice($results, 0, self::MAX_TOTAL),
+            'counts' => $countByType,
+        ], JSON_UNESCAPED_UNICODE);
+    }
+
+    private static function resolveAnakameUrl(string $href, string $baseUrl): string {
+        if (str_starts_with($href, 'http')) return $href;
+        if (str_starts_with($href, '/')) {
+            $parsed = parse_url($baseUrl);
+            return ($parsed['scheme'] ?? 'http') . '://' . ($parsed['host'] ?? 'anakame.com') . $href;
+        }
+        $base = dirname($baseUrl);
+        return $base . '/' . ltrim($href, '/');
     }
 
     private function match($query, $text) {

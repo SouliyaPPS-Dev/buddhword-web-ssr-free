@@ -2,55 +2,86 @@
 document.addEventListener('alpine:init', () => {
     Alpine.data('anakameSearch', () => ({
         items: <?= json_encode($items, JSON_UNESCAPED_UNICODE) ?>,
+        allItems: <?= json_encode($items, JSON_UNESCAPED_UNICODE) ?>,
         filteredItems: <?= json_encode($items, JSON_UNESCAPED_UNICODE) ?>,
+        categories: <?= json_encode($categories ?? [], JSON_UNESCAPED_UNICODE) ?>,
         searchQuery: '<?= htmlspecialchars($query, ENT_QUOTES) ?>',
-        displayCount: 20,
-        pageSize: 20,
-        isLoading: false,
+        currentPage: 1,
+        hasMore: <?= count($items) >= 20 ? 'true' : 'false' ?>,
+        isLoadingMore: false,
         observer: null,
 
-        get visibleItems() {
-            return this.filteredItems.slice(0, this.displayCount);
+        get groupedItems() {
+            const groups = {};
+            this.filteredItems.forEach(item => {
+                const key = item.category || 'Uncategorized';
+                if (!groups[key]) groups[key] = [];
+                groups[key].push(item);
+            });
+            return groups;
         },
 
-        get hasMore() {
-            return this.displayCount < this.filteredItems.length;
+        get categoryKeys() {
+            return Object.keys(this.groupedItems);
         },
 
         init() {
-            this.$nextTick(() => this.setupObserver());
+            this.$nextTick(() => this.setupScroll());
         },
 
-        setupObserver() {
-            const sentinel = this.$refs.sentinel;
-            if (!sentinel) return;
+        setupScroll() {
+            if (this.observer) this.observer.disconnect();
             this.observer = new IntersectionObserver((entries) => {
-                if (entries[0].isIntersecting && this.hasMore && !this.isLoading) {
+                const sentinel = document.getElementById('scroll-sentinel');
+                if (entries[0].isIntersecting && sentinel?.dataset.active === 'true') {
                     this.loadMore();
                 }
             }, { rootMargin: '200px' });
-            this.observer.observe(sentinel);
+            this.$nextTick(() => {
+                const sentinel = document.getElementById('scroll-sentinel');
+                if (sentinel) this.observer.observe(sentinel);
+            });
         },
 
-        loadMore() {
-            if (this.isLoading || !this.hasMore) return;
-            this.isLoading = true;
-            setTimeout(() => {
-                this.displayCount = Math.min(this.displayCount + this.pageSize, this.filteredItems.length);
-                this.isLoading = false;
-            }, 200);
+        async loadMore() {
+            if (this.isLoadingMore || !this.hasMore) return;
+            this.isLoadingMore = true;
+            const nextPage = this.currentPage + 1;
+            try {
+                const resp = await fetch('<?= url('/api/anakame/list') ?>?page=' + nextPage);
+                const data = await resp.json();
+                if (data.items && data.items.length > 0) {
+                    const existingUrls = new Set(this.allItems.map(i => i.href));
+                    const newItems = data.items.filter(i => !existingUrls.has(i.href));
+                    if (newItems.length > 0) {
+                        this.allItems = this.allItems.concat(newItems);
+                        this.filteredItems = this.searchQuery.trim()
+                            ? this.allItems.filter(item => item.title.toLowerCase().includes(this.searchQuery.trim().toLowerCase()))
+                            : this.allItems;
+                        this.currentPage = nextPage;
+                        this.hasMore = data.hasMore;
+                    } else {
+                        this.hasMore = false;
+                    }
+                } else {
+                    this.hasMore = false;
+                }
+            } catch(e) {
+                console.error('Load more failed', e);
+            } finally {
+                this.isLoadingMore = false;
+            }
         },
 
         filterItems() {
             const q = this.searchQuery.trim().toLowerCase();
             if (!q) {
-                this.filteredItems = this.items;
+                this.filteredItems = this.allItems;
             } else {
-                this.filteredItems = this.items.filter(item =>
+                this.filteredItems = this.allItems.filter(item =>
                     item.title.toLowerCase().includes(q)
                 );
             }
-            this.displayCount = 20;
         },
 
         highlight(text) {
@@ -71,19 +102,17 @@ document.addEventListener('alpine:init', () => {
 
 <section x-data="anakameSearch" class="flex flex-col items-center px-4 sm:px-6 lg:px-8 page-enter">
 
-    <!-- Header -->
     <div class="w-full max-w-4xl mt-4 mb-6">
         <h1 class="text-2xl sm:text-3xl font-bold text-white text-center Lao-font">Anakame (ພາສາໄທ)</h1>
         <p class="text-white/70 text-sm text-center Lao-font">Anakame - ພຣະສູດພາສາໄທ</p>
     </div>
 
-    <!-- Search -->
     <div class="w-full max-w-lg mx-auto mb-4">
         <div class="relative">
             <input type="search"
                    x-model="searchQuery"
                    @input.debounce.300ms="filterItems()"
-                   placeholder="ຄົ້ນຫາAnakame..."
+                   placeholder="ຄົ້ນຫາ..."
                    class="w-full bg-white/90 backdrop-blur-md border-none rounded-lg py-2.5 pl-9 pr-3 text-sm shadow-lg focus:ring-2 focus:ring-brown-500 outline-none transition-all Lao-font">
             <div class="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -93,43 +122,42 @@ document.addEventListener('alpine:init', () => {
         </div>
     </div>
 
-    <!-- Items Grid -->
     <div class="w-full max-w-3xl mb-20">
-        <div class="grid gap-2">
-            <template x-for="(item, index) in visibleItems" :key="item.href + index">
-                <a :href="'<?= url('/anakame/read') ?>?href=' + encodeURIComponent(item.href)"
-                   class="bg-white/95 backdrop-blur-md hover:bg-white rounded-xl px-4 py-3 shadow-md transition-all hover:shadow-lg flex items-center gap-3">
-                    <span class="flex-shrink-0 w-8 h-8 rounded-full bg-[#795548] text-white flex items-center justify-center text-xs font-bold"
-                          x-text="index + 1"></span>
-                    <span class="text-sm font-medium text-gray-800 Lao-font" x-html="highlight(item.title)"></span>
-                </a>
-            </template>
-        </div>
-
-        <!-- Load More / Infinite Scroll Sentinel -->
-        <div x-ref="sentinel" class="text-center mt-4">
-            <template x-if="hasMore">
-                <div class="flex flex-col items-center gap-3">
-                    <button @click="loadMore()"
-                            class="bg-white/90 hover:bg-white text-gray-800 px-6 py-2 rounded-xl font-medium shadow-md transition-all hover:shadow-lg Lao-font text-sm">
-                        ໂຫຼດເພີ່ມເຕີມ...
-                    </button>
-                    <div x-show="isLoading" class="flex items-center gap-2 text-white/80 text-sm Lao-font">
-                        <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                        </svg>
-                        ກຳລັງໂຫຼດ...
-                    </div>
+        <template x-for="catName in categoryKeys" :key="catName">
+            <div class="mb-4">
+                <div class="flex items-center gap-2 px-1 mb-2">
+                    <span class="text-white font-bold text-base Lao-font" x-text="catName"></span>
+                    <span class="text-white/50 text-xs" x-text="'(' + groupedItems[catName].length + ')'"></span>
                 </div>
-            </template>
-            <template x-if="!hasMore && filteredItems.length > 0">
-                <p class="text-white/50 text-sm Lao-font py-4">— ທັງໝົດ —</p>
-            </template>
+                <div class="grid gap-1.5">
+                    <template x-for="(item, idx) in groupedItems[catName]" :key="item.href + idx">
+                        <a :href="'<?= url('/anakame/read') ?>?href=' + encodeURIComponent(item.href)"
+                           class="bg-white/95 backdrop-blur-md hover:bg-white rounded-xl px-4 py-2.5 shadow-md transition-all hover:shadow-lg flex items-center gap-3">
+                            <span class="flex-shrink-0 w-7 h-7 rounded-full bg-[#795548] text-white flex items-center justify-center text-xs font-bold"
+                                  x-text="idx + 1"></span>
+                            <span class="text-sm font-medium text-gray-800 Lao-font" x-html="highlight(item.title)"></span>
+                        </a>
+                    </template>
+                </div>
+            </div>
+        </template>
+
+        <div class="text-center mt-4">
+            <button @click="loadMore()"
+                    x-show="hasMore && !isLoadingMore && !searchQuery.trim()"
+                    class="bg-white/90 hover:bg-white text-gray-800 px-6 py-2 rounded-xl font-medium shadow-md transition-all hover:shadow-lg Lao-font text-sm">
+                ໂຫຼດເພີ່ມເຕີມ...
+            </button>
+            <div x-show="isLoadingMore" class="flex justify-center p-4">
+                <div class="loader"></div>
+            </div>
+            <div x-show="!hasMore && filteredItems.length > 0 && !isLoadingMore" class="text-center py-4">
+                <p class="text-white/50 text-sm Lao-font">— ທັງໝົດ —</p>
+            </div>
+            <div id="scroll-sentinel" data-active="true" class="h-1"></div>
         </div>
 
-        <!-- Empty -->
-        <div x-show="filteredItems.length === 0" class="text-center py-10">
+        <div x-show="filteredItems.length === 0 && !isLoadingMore" class="text-center py-10">
             <p class="text-white text-xl font-bold Lao-font">ບໍ່ພົບຂໍ້ມູນ</p>
         </div>
     </div>

@@ -4,19 +4,32 @@ namespace App\Controllers;
 class AnakameController {
     private const BASE_URL = 'http://anakame.com/page/1_Sutas';
 
+    private static array $categories = [
+        ['name' => 'Sutta', 'url' => 'http://anakame.com/page/1_Sutas/main/1_Sutta.htm', 'icon' => 'menu_book'],
+        ['name' => 'Sutta Set', 'url' => 'http://anakame.com/page/4_Suta_Set/Main/Main_Set01.htm', 'icon' => 'library_books'],
+        ['name' => 'Short Sutta', 'url' => 'http://anakame.com/page/4_Short_Sutta.htm', 'icon' => 'auto_stories'],
+        ['name' => 'Person', 'url' => 'http://anakame.com/page/7_person.htm', 'icon' => 'person'],
+        ['name' => 'Misc', 'url' => 'http://anakame.com/page/8_Misc.htm', 'icon' => 'category'],
+    ];
+
     public function index() {
-        $items = $this->fetchListing();
+        $allItems = $this->fetchListings();
         $query = $_GET['q'] ?? '';
+        $perPage = 20;
 
         if ($query) {
-            $items = array_filter($items, function($item) use ($query) {
+            $allItems = array_filter($allItems, function($item) use ($query) {
                 return mb_stripos($item['title'], $query) !== false;
             });
+            $allItems = array_values($allItems);
         }
+
+        $items = array_slice($allItems, 0, $perPage);
 
         return view('pages.anakame.index', [
             'items' => array_values($items),
             'query' => $query,
+            'categories' => self::$categories,
             'seo' => [
                 'title' => 'Anakame (ພາສາໄທ) - ຄຳສອນພຸດທະ',
                 'description' => 'Anakame ພາສາໄທ ຮວບຮວມພຣະສູດສຳຄັນ',
@@ -26,7 +39,7 @@ class AnakameController {
     }
 
     public function apiList() {
-        $items = $this->fetchListing();
+        $items = $this->fetchListings();
         $query = $_GET['q'] ?? '';
         $page = max(1, intval($_GET['page'] ?? 1));
         $perPage = 20;
@@ -44,6 +57,7 @@ class AnakameController {
 
         $this->json([
             'items' => $paged,
+            'categories' => self::$categories,
             'total' => $total,
             'page' => $page,
             'hasMore' => ($offset + $perPage) < $total,
@@ -52,12 +66,6 @@ class AnakameController {
 
     public function apiContent() {
         $url = $_GET['url'] ?? '';
-        $path = $_GET['path'] ?? '';
-
-        if ($path) {
-            $url = self::BASE_URL . '/' . ltrim($path, '/');
-        }
-
         if (!$url) {
             http_response_code(400);
             $this->json(['error' => 'Missing url parameter']);
@@ -88,7 +96,10 @@ class AnakameController {
             exit;
         }
 
-        $url = self::BASE_URL . '/' . ltrim($href, '/');
+        $url = $href;
+        if (!str_starts_with($href, 'http')) {
+            $url = self::BASE_URL . '/' . ltrim($href, '/');
+        }
         $html = @file_get_contents($url, false, $this->getStreamContext());
         $content = '';
         $title = 'Anakame';
@@ -98,18 +109,10 @@ class AnakameController {
             $title = $this->extractTitle($html);
         }
 
-        $allItems = $this->fetchListing();
-        $allHrefs = array_column($allItems, 'href');
-        $currentIndex = array_search($href, $allHrefs);
-        $prevHref = $currentIndex !== false && $currentIndex > 0 ? $allItems[$currentIndex - 1]['href'] : null;
-        $nextHref = $currentIndex !== false && $currentIndex < count($allItems) - 1 ? $allItems[$currentIndex + 1]['href'] : null;
-
         return view('pages.anakame.show', [
             'href' => $href,
             'content' => $content,
             'title' => trim($title),
-            'prevHref' => $prevHref,
-            'nextHref' => $nextHref,
             'seo' => [
                 'title' => trim($title) . ' - Anakame',
                 'description' => 'ອ່ານAnakame ພາສາໄທ',
@@ -117,8 +120,8 @@ class AnakameController {
         ]);
     }
 
-    private function getStreamContext() {
-        return stream_context_create(['http' => ['timeout' => 5]]);
+    private function getStreamContext(int $timeout = 5) {
+        return stream_context_create(['http' => ['timeout' => $timeout]]);
     }
 
     private function extractContent($html): string {
@@ -137,32 +140,59 @@ class AnakameController {
         return $m[1] ?? 'Anakame';
     }
 
-    private function fetchListing(): array {
-        $html = @file_get_contents(self::BASE_URL . '/main/1_Sutta_number.htm', false, $this->getStreamContext());
-        if ($html === false) return [];
-
-        $items = [];
-        preg_match_all('/<a\s+href="([^"]+)"[^>]*>([^<]+)<\/a>/i', $html, $matches, PREG_SET_ORDER);
+    private function fetchListings(): array {
+        $allItems = [];
         $seen = [];
+        $siteUp = true;
 
-        foreach ($matches as $m) {
-            $href = trim($m[1]);
-            $title = trim(strip_tags($m[2]));
-            if (empty($title) || $title === '' || !str_contains($href, '.htm')) continue;
+        foreach (self::$categories as $catIndex => $category) {
+            if (!$siteUp) break;
+            $html = @file_get_contents($category['url'], false, $this->getStreamContext($catIndex === 0 ? 5 : 2));
+            if ($html === false) {
+                if ($catIndex === 0) $siteUp = false;
+                continue;
+            }
 
-            $normalized = str_replace('../', '', $href);
-            $normalized = preg_replace('/#.*$/', '', $normalized);
-            $key = $normalized . '|' . $title;
-            if (isset($seen[$key])) continue;
-            $seen[$key] = true;
+            preg_match_all('/<a\s+href="([^"]+)"[^>]*>(.*?)<\/a>/i', $html, $matches, PREG_SET_ORDER);
 
-            $items[] = [
-                'href' => $normalized,
-                'title' => $title,
-            ];
+            foreach ($matches as $m) {
+                $href = trim($m[1]);
+                $inner = $m[2];
+
+                if (str_contains($inner, '<img') || empty(trim(strip_tags($inner)))) continue;
+                if ($href === '#' || str_starts_with($href, 'javascript')) continue;
+                if (str_contains($href, 'index.htm') || str_contains($href, 'favicon')) continue;
+                if (!str_contains($href, '.htm') && !str_contains($href, '.html')) continue;
+
+                $title = trim(strip_tags($inner));
+                $title = preg_replace('/\s+/', ' ', $title);
+                if (mb_strlen($title) < 3) continue;
+
+                $normalized = $this->resolveUrl($href, $category['url']);
+                $key = $normalized . '|' . $title;
+                if (isset($seen[$key])) continue;
+                $seen[$key] = true;
+
+                $allItems[] = [
+                    'href' => $normalized,
+                    'title' => $title,
+                    'category' => $category['name'],
+                    'categoryIndex' => $catIndex,
+                ];
+            }
         }
 
-        return $items;
+        return $allItems;
+    }
+
+    private function resolveUrl(string $href, string $baseUrl): string {
+        if (str_starts_with($href, 'http')) return $href;
+        if (str_starts_with($href, '/')) {
+            $parsed = parse_url($baseUrl);
+            return ($parsed['scheme'] ?? 'http') . '://' . ($parsed['host'] ?? 'anakame.com') . $href;
+        }
+        $base = dirname($baseUrl);
+        return $base . '/' . ltrim($href, '/');
     }
 
     private function json($data) {

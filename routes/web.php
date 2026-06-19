@@ -52,6 +52,7 @@ return [
     '/api/anakame/list' => 'AnakameController@apiList',
     '/api/anakame/content' => 'AnakameController@apiContent',
     '/uttayarndham' => 'UttayarndhamController@index',
+    '/uttayarndham/tag' => 'UttayarndhamController@tag',
     '/uttayarndham/read' => 'UttayarndhamController@read',
     '/api/uttayarndham/list' => 'UttayarndhamController@apiList',
     '/api/uttayarndham/content' => 'UttayarndhamController@apiContent',

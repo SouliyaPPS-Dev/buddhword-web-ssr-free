@@ -5,7 +5,7 @@ class UttayarndhamController {
     private const BASE_URL = 'https://uttayarndham.org';
 
     public function index() {
-        $items = $this->fetchPage(0);
+        $items = $this->fetchTags(0);
         $query = $_GET['q'] ?? '';
 
         if ($query) {
@@ -15,22 +15,26 @@ class UttayarndhamController {
         }
 
         return view('pages.uttayarndham.index', [
-            'items' => $items,
+            'items' => array_values($items),
             'query' => $query,
             'seo' => [
-                'title' => 'ອຸດທະຍານທັມ (ທັມມະ) - ຄຳສອນພຸດທະ',
-                'description' => 'ອຸດທະຍານທັມ ຮວບຮວມບົດຄວາມທັມມະ',
-                'keywords' => 'ອຸດທະຍານທັມ, ທັມມະ, ທັມ, ຄຳສອນພຸດທະ',
+                'title' => 'Uttayarndham (ທັມມະ) - ຄຳສອນພຸດທະ',
+                'description' => 'Uttayarndham ຮວບຮວມບົດຄວາມທັມມະ',
+                'keywords' => 'uttayarndham, ທັມມະ, ທັມ, ຄຳສອນພຸດທະ',
             ]
         ]);
     }
 
     public function apiList() {
         $page = max(0, intval($_GET['page'] ?? 0));
-        $items = $this->fetchPage($page);
+        $items = $this->fetchTags($page);
 
-        $nextItems = $this->fetchPage($page + 1);
-        $hasMore = count($nextItems) > 0;
+        $html = @file_get_contents(
+            self::BASE_URL . '/keyword/tags' . ($page > 0 ? '?page=' . $page : ''),
+            false,
+            $this->getStreamContext()
+        );
+        $hasMore = $html !== false && preg_match('/rel="next"/', $html) === 1;
 
         $this->json([
             'items' => $items,
@@ -59,12 +63,25 @@ class UttayarndhamController {
         preg_match('/<h1[^>]*>(.*?)<\/h1>/s', $html, $titleMatches);
         $title = $titleMatches[1] ?? '';
 
+        $content = '';
         preg_match('/<article[^>]*>(.*?)<\/article>/s', $html, $articleMatches);
-        $content = $articleMatches[1] ?? '';
+        if (!empty($articleMatches[1])) {
+            $content = $articleMatches[1];
+        }
 
         if (empty($content)) {
             preg_match('/<div class="content"[^>]*>(.*?)<\/div>/s', $html, $divMatches);
             $content = $divMatches[1] ?? '';
+        }
+
+        if (empty($content)) {
+            preg_match('/<div class="view-content[^>]*>(.*?)<\/div>/s', $html, $viewMatches);
+            $content = $viewMatches[1] ?? '';
+        }
+
+        if (empty($content)) {
+            preg_match('/<div id="content"[^>]*>(.*?)<\/div>/s', $html, $idMatches);
+            $content = $idMatches[1] ?? '';
         }
 
         $content = strip_tags($content, '<p><br><b><i><u><h2><h3><ul><ol><li><strong><em><a><img><blockquote><table><tr><td><th>');
@@ -86,7 +103,7 @@ class UttayarndhamController {
 
         $fullUrl = strpos($url, 'http') === 0 ? $url : self::BASE_URL . $url;
         $html = @file_get_contents($fullUrl, false, $this->getStreamContext());
-        $title = 'ອຸດທະຍານທັມ';
+        $title = 'Uttayarndham';
         $content = '';
 
         if ($html !== false) {
@@ -100,27 +117,20 @@ class UttayarndhamController {
                 preg_match('/<div class="content"[^>]*>(.*?)<\/div>/s', $html, $divMatches);
                 $content = $divMatches[1] ?? '';
             }
-        }
 
-        $prevUrl = null;
-        $nextUrl = null;
-        for ($page = 0; $page <= 5; $page++) {
-            $pageItems = $this->fetchPage($page);
-            if (empty($pageItems)) break;
-            foreach ($pageItems as $idx => $item) {
-                if ($item['url'] === $url || $item['url'] === '/' . ltrim($url, '/')) {
-                    if ($idx > 0) $prevUrl = $pageItems[$idx - 1]['url'];
-                    if ($idx < count($pageItems) - 1) $nextUrl = $pageItems[$idx + 1]['url'];
-                    break 2;
-                }
+            if (empty($content)) {
+                preg_match('/<div class="view-content[^>]*>(.*?)<\/div>/s', $html, $viewMatches);
+                $content = $viewMatches[1] ?? '';
+            }
+
+            if (empty($content)) {
+                preg_match('/<div id="content"[^>]*>(.*?)<\/div>/s', $html, $idMatches);
+                $content = $idMatches[1] ?? '';
             }
         }
 
-        // Remove entire RDF metadata elements to prevent TTS from reading hidden schema text
         $content = preg_replace('/<[^>]*class="[^"]*\brdf-meta\b[^"]*"[^>]*>.*?<\/[^>]+>/is', '', $content);
-        // Remove container elements that only hold RDF metadata (empty after removal above)
         $content = preg_replace('/<div[^>]*class="[^"]*\bfield-name-title\b[^"]*"[^>]*>.*?<\/div>/is', '', $content);
-
         $content = strip_tags($content, '<p><br><b><i><u><h2><h3><ul><ol><li><strong><em><a><img><blockquote><table><tr><td><th>');
         $content = preg_replace('/<img\s+([^>]*?)src\s*=\s*"((?!https?:|\/\/))([^"]+)"/i', '<img $1src="' . self::BASE_URL . '/$3"', $content);
         $content = preg_replace('/<img\s+([^>]*?)src\s*=\s*\'((?!https?:|\/\/))([^\']+)\'/i', '<img $1src=\'' . self::BASE_URL . '/$3\'', $content);
@@ -129,36 +139,126 @@ class UttayarndhamController {
             'title' => trim(strip_tags($title)),
             'content' => $content,
             'url' => $url,
-            'prevUrl' => $prevUrl,
-            'nextUrl' => $nextUrl,
             'seo' => [
-                'title' => trim(strip_tags($title)) . ' - ອຸດທະຍານທັມ',
+                'title' => trim(strip_tags($title)) . ' - Uttayarndham',
                 'description' => 'ອ່ານບົດຄວາມທັມມະ',
             ]
         ]);
+    }
+
+    public function tag() {
+        $url = $_GET['url'] ?? '';
+        if (!$url) {
+            header('Location: ' . url('/uttayarndham'));
+            exit;
+        }
+
+        $fullUrl = strpos($url, 'http') === 0 ? $url : self::BASE_URL . $url;
+        $html = @file_get_contents($fullUrl, false, $this->getStreamContext());
+        $tagTitle = 'Uttayarndham';
+        $items = [];
+
+        if ($html !== false) {
+            preg_match('/<h1[^>]*>(.*?)<\/h1>/s', $html, $h1);
+            if (!empty($h1[1])) {
+                $tagTitle = trim(strip_tags($h1[1]));
+            }
+            if (empty($tagTitle) || $tagTitle === 'Uttayarndham') {
+                preg_match('/<h3[^>]*>(.*?)<\/h3>/s', $html, $h3);
+                $tagTitle = !empty($h3[1]) ? trim(strip_tags($h3[1])) : 'Uttayarndham';
+            }
+
+            $items = $this->parseTagItems($html);
+        }
+
+        $query = $_GET['q'] ?? '';
+        if ($query) {
+            $items = array_filter($items, function($item) use ($query) {
+                return mb_stripos($item['title'], $query) !== false;
+            });
+            $items = array_values($items);
+        }
+
+        return view('pages.uttayarndham.tag', [
+            'tagTitle' => $tagTitle,
+            'items' => array_values($items),
+            'query' => $query,
+            'url' => $url,
+            'seo' => [
+                'title' => $tagTitle . ' - Uttayarndham',
+                'description' => 'ລາຍການໃນ ' . $tagTitle,
+            ]
+        ]);
+    }
+
+    private function parseTagItems(string $html): array {
+        $items = [];
+        $seen = [];
+
+        preg_match('/<div class="view-content[^>]*>(.*?)<\/div>/s', $html, $viewMatch);
+        $listingHtml = $viewMatch[1] ?? $html;
+
+        preg_match_all('/<a\s+href="\s*([^"]+)"[^>]*>\s*([^<]+?)\s*<\/a>/s', $listingHtml, $matches, PREG_SET_ORDER);
+        foreach ($matches as $m) {
+            $title = trim($m[2]);
+            $href = trim($m[1]);
+            if (empty($title) || $title === $href) continue;
+            if (str_contains($href, '#') || str_starts_with($href, 'javascript')) continue;
+            $title = preg_replace('/\s+/', ' ', $title);
+            if (!empty($title) && !isset($seen[$href])) {
+                $seen[$href] = true;
+                $items[] = [
+                    'title' => $title,
+                    'url' => $href,
+                ];
+            }
+        }
+
+        if (empty($items)) {
+            $text = strip_tags($html);
+            $text = html_entity_decode($text, ENT_QUOTES, 'UTF-8');
+            $text = preg_replace('/\s+/', ' ', $text);
+            $lines = explode("\n", $text);
+            foreach ($lines as $line) {
+                $line = trim($line);
+                if (mb_strlen($line) >= 10 && !isset($seen[$line])) {
+                    $seen[$line] = true;
+                    $items[] = [
+                        'title' => mb_strlen($line) > 80 ? mb_substr($line, 0, 80) . '...' : $line,
+                        'url' => '',
+                    ];
+                }
+            }
+        }
+
+        return $items;
     }
 
     private function getStreamContext() {
         return stream_context_create(['http' => ['timeout' => 5]]);
     }
 
-    private function fetchPage(int $page): array {
-        $url = $page === 0
-            ? self::BASE_URL . '/dhamma-sharing'
-            : self::BASE_URL . '/dhamma-sharing?page=' . $page;
+    private function fetchTags(int $page): array {
+        $url = self::BASE_URL . '/keyword/tags' . ($page > 0 ? '?page=' . $page : '');
 
         $html = @file_get_contents($url, false, $this->getStreamContext());
         if ($html === false) return [];
 
         $items = [];
+        $seen = [];
 
-        preg_match_all('/<h4><a\s+href="\s+(\/[^"]+)"[^>]*>\s*([^<]+?)\s*<\/a><\/h4>/s', $html, $matches, PREG_SET_ORDER);
+        preg_match_all('/<a\s+href="(\/taxonomy\/term\/\d+)"[^>]*>\s*([^<]+?)\s*<\/a>/s', $html, $matches, PREG_SET_ORDER);
 
         foreach ($matches as $m) {
-            $items[] = [
-                'title' => trim($m[2]),
-                'url' => trim($m[1]),
-            ];
+            $name = trim($m[2]);
+            $href = trim($m[1]);
+            if (!empty($name) && !isset($seen[$href])) {
+                $seen[$href] = true;
+                $items[] = [
+                    'title' => $name,
+                    'url' => $href,
+                ];
+            }
         }
 
         return $items;

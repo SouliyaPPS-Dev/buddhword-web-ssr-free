@@ -479,15 +479,73 @@
         isSearchOpen: false,
         searchQuery: '',
         searchResults: [],
+        searchCounts: {},
+        filteredType: null,
         isLoading: false,
         isSyncing: false,
         hasUpdate: false,
         cachedVersion: 0,
         isOnline: navigator.onLine,
         searchController: null,
+        get resultTypes() {
+            return Object.keys(this.searchCounts).sort();
+        },
+        get filteredResults() {
+            if (!this.filteredType) return this.searchResults;
+            return this.searchResults.filter(r => r.type === this.filteredType);
+        },
+        handleSearchEnter() {
+            const url = this.externalSearchUrl;
+            if (url) { window.open(url, '_blank'); return; }
+            this.isSearchOpen = false;
+        },
+        get externalSearchUrl() {
+            const q = this.searchQuery.trim();
+            if (q.length < 2) return null;
+            if (this.filteredType === 'uttayarndham') {
+                return 'https://uttayarndham.org/search/google?keys=' + encodeURIComponent(q);
+            }
+            if (this.filteredType === 'anakame') {
+                return 'https://www.google.com/search?q=' + encodeURIComponent(q) + '&sitesearch=www.anakame.com';
+            }
+            return null;
+        },
+        selectFilter(type) {
+            this.filteredType = this.filteredType === type ? null : type;
+        },
+        typeLabel(type) {
+            const labels = {
+                sutra: 'ພຣະສູດ',
+                etipitaka: 'E-Tipitaka',
+                tipitaka: 'E-Tipitaka',
+                'book-page': 'ປື້ມ PDF',
+                book: 'ປື້ມ',
+                video: 'Video',
+                calendar: 'ປະຕິທິນ',
+                anakame: 'Anakame',
+                uttayarndham: 'Uttayarndham',
+            };
+            return labels[type] || type;
+        },
+        typeColor(type) {
+            const colors = {
+                sutra: 'bg-blue-100 text-blue-700',
+                etipitaka: 'bg-emerald-100 text-emerald-700',
+                tipitaka: 'bg-emerald-100 text-emerald-700',
+                'book-page': 'bg-amber-100 text-amber-700',
+                book: 'bg-green-100 text-green-700',
+                video: 'bg-red-100 text-red-700',
+                calendar: 'bg-purple-100 text-purple-700',
+                anakame: 'bg-cyan-100 text-cyan-700',
+                uttayarndham: 'bg-orange-100 text-orange-700',
+            };
+            return colors[type] || 'bg-gray-100 text-gray-700';
+        },
         async performSearch() {
             if (this.searchQuery.trim().length < 2) {
                 this.searchResults = [];
+                this.searchCounts = {};
+                this.filteredType = null;
                 return;
             }
             if (this.searchController) this.searchController.abort();
@@ -497,7 +555,9 @@
             try {
                 const response = await fetch('<?= url('/api/search') ?>?q=' + encodeURIComponent(this.searchQuery), { signal: ac.signal });
                 if (!ac.signal.aborted) {
-                    this.searchResults = await response.json();
+                    const data = await response.json();
+                    this.searchResults = data.results || data;
+                    this.searchCounts = data.counts || {};
                 }
             } catch (e) {
                 if (e.name !== 'AbortError') console.error('Search failed', e);
@@ -726,6 +786,7 @@
                     <input x-ref="searchInput"
                            x-model="searchQuery" 
                            @input.debounce.300ms="performSearch()"
+                           @keydown.enter="handleSearchEnter()"
                            type="search" 
                            placeholder="ຄົ້ນຫາ..." 
                            class="flex-1 text-base sm:text-xl border-none outline-none font-lao"
@@ -750,27 +811,57 @@
                         ພິມຢ່າງໜ້ອຍ 2 ຕົວອັກສອນເພື່ອຄົ້ນຫາ...
                     </div>
 
-                    <div class="flex flex-col gap-1 sm:gap-2">
-                        <template x-for="result in searchResults" :key="result.url + result.title">
-                            <a :href="result.url" class="p-3 sm:p-4 hover:bg-gray-50 rounded-xl sm:rounded-2xl flex flex-col gap-1 transition-colors border border-transparent hover:border-brown-100 overflow-hidden max-w-full">
-                                <div class="flex items-start gap-2 min-w-0">
-                                    <span class="px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-bold uppercase tracking-wider flex-shrink-0"
-                                          :class="{
-                                              'bg-blue-100 text-blue-700': result.type === 'sutra',
-                                              'bg-green-100 text-green-700': result.type === 'book',
-                                              'bg-red-100 text-red-700': result.type === 'video',
-                                              'bg-purple-100 text-purple-700': result.type === 'calendar',
-                                              'bg-amber-100 text-amber-700': result.type === 'book-page',
-                                              'bg-emerald-100 text-emerald-700': result.type === 'etipitaka',
-                                              'bg-cyan-100 text-cyan-700': result.type === 'anakame',
-                                              'bg-orange-100 text-orange-700': result.type === 'uttayarndham'
-                                          }"
-                                          x-html="highlight(result.category)"></span>
-                                    <h4 class="text-base sm:text-lg font-bold text-gray-800 font-lao break-words min-w-0" x-html="highlight(result.title)"></h4>
+                    <div x-show="!isLoading && searchResults.length > 0">
+                        <!-- Type filter pills -->
+                        <div class="flex flex-wrap gap-1.5 sm:gap-2 px-1 pb-3 border-b mb-3">
+                            <template x-for="type in resultTypes" :key="type">
+                                <button @click="selectFilter(type)"
+                                        :class="filteredType === type ? typeColor(type) : 'bg-gray-100 text-gray-500 hover:bg-gray-200'"
+                                        class="px-2 py-1 rounded-full text-[10px] sm:text-xs font-medium transition-colors flex items-center gap-1">
+                                    <span x-text="typeLabel(type)"></span>
+                                    <span class="opacity-70" x-text="'(' + searchCounts[type] + ')'"></span>
+                                </button>
+                            </template>
+                            <button x-show="filteredType"
+                                    @click="filteredType = null"
+                                    class="px-2 py-1 rounded-full text-[10px] sm:text-xs font-medium bg-red-100 text-red-600 hover:bg-red-200 transition-colors">
+                                ລ້າງຕົວກອງ
+                            </button>
+                        </div>
+
+                        <!-- External search banner for uttayarndham / anakame -->
+                        <div x-show="externalSearchUrl"
+                             class="mb-3 p-3 sm:p-4 bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-xl sm:rounded-2xl">
+                            <a :href="externalSearchUrl"
+                               target="_blank" rel="noopener"
+                               class="flex items-center gap-3">
+                                <svg class="h-5 w-5 sm:h-6 sm:w-6 text-orange-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                                </svg>
+                                <div class="min-w-0">
+                                    <div class="text-sm sm:text-base font-bold text-orange-800 font-lao">
+                                        ຄົ້ນຫາ "<span x-text="searchQuery"></span>" ທັງໝົດໃນ
+                                        <span x-text="filteredType === 'uttayarndham' ? 'uttayarndham.org' : 'anakame.com'"></span>
+                                    </div>
+                                    <div class="text-xs sm:text-sm text-orange-600 font-lao mt-0.5">ໃຊ້ Google Search ເພື່ອຄົ້ນຫາເນື້ອໃນທັງໝົດ (ເປີດໃນແທັບໃໝ່)</div>
                                 </div>
-                                <p class="text-xs sm:text-sm text-gray-500 line-clamp-2 font-lao break-words" x-html="highlight(result.detail)"></p>
+                                <span class="ml-auto text-xs text-orange-500 flex-shrink-0">Enter ↵</span>
                             </a>
-                        </template>
+                        </div>
+
+                        <div class="flex flex-col gap-1 sm:gap-2">
+                            <template x-for="result in filteredResults" :key="result.url + result.title">
+                                <a :href="result.url" :target="result.type === 'uttayarndham' || result.type === 'anakame' ? '_blank' : '_self'" :rel="result.type === 'uttayarndham' || result.type === 'anakame' ? 'noopener' : ''" class="p-3 sm:p-4 hover:bg-gray-50 rounded-xl sm:rounded-2xl flex flex-col gap-1 transition-colors border border-transparent hover:border-brown-100 overflow-hidden max-w-full">
+                                    <div class="flex items-start gap-2 min-w-0">
+                                        <span class="px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-bold uppercase tracking-wider flex-shrink-0"
+                                              :class="typeColor(result.type)"
+                                              x-html="highlight(result.category)"></span>
+                                        <h4 class="text-base sm:text-lg font-bold text-gray-800 font-lao break-words min-w-0" x-html="highlight(result.title)"></h4>
+                                    </div>
+                                    <p class="text-xs sm:text-sm text-gray-500 line-clamp-2 font-lao break-words" x-html="highlight(result.detail)"></p>
+                                </a>
+                            </template>
+                        </div>
                     </div>
                 </div>
             </div>
