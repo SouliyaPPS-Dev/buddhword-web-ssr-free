@@ -64,7 +64,7 @@ class AnakameController {
             return;
         }
 
-        $html = @file_get_contents($url);
+        $html = @file_get_contents($url, false, $this->getStreamContext());
         if ($html === false) {
             http_response_code(404);
             $this->json(['error' => 'Content not found']);
@@ -89,7 +89,7 @@ class AnakameController {
         }
 
         $url = self::BASE_URL . '/' . ltrim($href, '/');
-        $html = @file_get_contents($url);
+        $html = @file_get_contents($url, false, $this->getStreamContext());
         $content = '';
         $title = 'Anakame';
 
@@ -117,6 +117,10 @@ class AnakameController {
         ]);
     }
 
+    private function getStreamContext() {
+        return stream_context_create(['http' => ['timeout' => 5]]);
+    }
+
     private function extractContent($html): string {
         $html = preg_replace('/<script[^>]*>.*?<\/script>/si', '', $html);
         $html = preg_replace('/<style[^>]*>.*?<\/style>/si', '', $html);
@@ -134,7 +138,7 @@ class AnakameController {
     }
 
     private function fetchListing(): array {
-        $html = @file_get_contents(self::BASE_URL . '/main/1_Sutta_number.htm');
+        $html = @file_get_contents(self::BASE_URL . '/main/1_Sutta_number.htm', false, $this->getStreamContext());
         if ($html === false) return [];
 
         $items = [];

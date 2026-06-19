@@ -49,7 +49,7 @@ class UttayarndhamController {
         }
 
         $fullUrl = strpos($url, 'http') === 0 ? $url : self::BASE_URL . $url;
-        $html = @file_get_contents($fullUrl);
+        $html = @file_get_contents($fullUrl, false, $this->getStreamContext());
         if ($html === false) {
             http_response_code(404);
             $this->json(['error' => 'Content not found']);
@@ -85,7 +85,7 @@ class UttayarndhamController {
         }
 
         $fullUrl = strpos($url, 'http') === 0 ? $url : self::BASE_URL . $url;
-        $html = @file_get_contents($fullUrl);
+        $html = @file_get_contents($fullUrl, false, $this->getStreamContext());
         $title = 'ອຸດທະຍານທັມ';
         $content = '';
 
@@ -138,12 +138,16 @@ class UttayarndhamController {
         ]);
     }
 
+    private function getStreamContext() {
+        return stream_context_create(['http' => ['timeout' => 5]]);
+    }
+
     private function fetchPage(int $page): array {
         $url = $page === 0
             ? self::BASE_URL . '/dhamma-sharing'
             : self::BASE_URL . '/dhamma-sharing?page=' . $page;
 
-        $html = @file_get_contents($url);
+        $html = @file_get_contents($url, false, $this->getStreamContext());
         if ($html === false) return [];
 
         $items = [];

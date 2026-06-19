@@ -12,6 +12,10 @@ class SearchController {
     private const MAX_PER_TYPE = 20;
     private const MAX_TOTAL = 100;
 
+    private static function getStreamContext() {
+        return stream_context_create(['http' => ['timeout' => 5]]);
+    }
+
     public function search() {
         $query = $_GET['q'] ?? '';
         $q = mb_strtolower(trim($query));
@@ -138,7 +142,7 @@ class SearchController {
 
         // 7. Search Anakame
         if (($countByType['anakame'] ?? 0) < self::MAX_PER_TYPE) {
-            $anakameHtml = @file_get_contents('http://anakame.com/page/1_Sutas/main/1_Sutta_number.htm');
+            $anakameHtml = @file_get_contents('http://anakame.com/page/1_Sutas/main/1_Sutta_number.htm', false, self::getStreamContext());
             if ($anakameHtml !== false) {
                 preg_match_all('/<a\s+href="([^"]+)"[^>]*>([^<]+)<\/a>/i', $anakameHtml, $aMatches, PREG_SET_ORDER);
                 $seen = [];
@@ -167,7 +171,7 @@ class SearchController {
 
         // 8. Search Uttayarndham
         if (($countByType['uttayarndham'] ?? 0) < self::MAX_PER_TYPE) {
-            $uttHtml = @file_get_contents('https://uttayarndham.org/dhamma-sharing');
+            $uttHtml = @file_get_contents('https://uttayarndham.org/dhamma-sharing', false, self::getStreamContext());
             if ($uttHtml !== false) {
                 preg_match_all('/<h4><a\s+href="\s+(\/[^"]+)"[^>]*>\s*([^<]+?)\s*<\/a><\/h4>/s', $uttHtml, $uMatches, PREG_SET_ORDER);
                 foreach ($uMatches as $um) {
