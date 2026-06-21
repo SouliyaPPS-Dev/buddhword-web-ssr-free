@@ -712,12 +712,36 @@
                 /* silently fail */
             }
         },
+        saveSearchState() {
+            const q = this.searchQuery.trim();
+            if (q.length >= 2) {
+                localStorage.setItem('buddhaword_search_query', q);
+                localStorage.setItem('buddhaword_search_results', JSON.stringify(this.searchResults));
+                localStorage.setItem('buddhaword_search_counts', JSON.stringify(this.searchCounts));
+            } else {
+                localStorage.removeItem('buddhaword_search_query');
+                localStorage.removeItem('buddhaword_search_results');
+                localStorage.removeItem('buddhaword_search_counts');
+            }
+        },
+        restoreSearchState() {
+            const savedQuery = localStorage.getItem('buddhaword_search_query') || '';
+            if (savedQuery) {
+                this.searchQuery = savedQuery;
+                const savedResults = localStorage.getItem('buddhaword_search_results');
+                const savedCounts = localStorage.getItem('buddhaword_search_counts');
+                if (savedResults) this.searchResults = JSON.parse(savedResults);
+                if (savedCounts) this.searchCounts = JSON.parse(savedCounts);
+            }
+        },
         init() {
             /* Listen for online/offline status */
             window.addEventListener('online', () => { this.isOnline = true; });
             window.addEventListener('offline', () => { this.isOnline = false; });
             this.cachedVersion = parseInt(localStorage.getItem('buddhaword_version') || '0', 10);
             this.checkForUpdates();
+            this.restoreSearchState();
+            this.$watch('searchQuery', (value) => this.saveSearchState());
         }
     }">
         <div id="navbarWrapper" class="fixed top-0 left-0 right-0 z-50 transition-transform duration-300">
@@ -749,7 +773,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                     </svg>
                 </button>
-                <button @click="isSearchOpen = true; $nextTick(() => $refs.searchInput.focus())" class="text-white p-2 hover:bg-white/10 rounded-full transition-colors" aria-label="Search">
+                <button @click="isSearchOpen = true; $nextTick(() => { $refs.searchInput.focus(); if (searchQuery.trim().length >= 2) performSearch(); })" class="text-white p-2 hover:bg-white/10 rounded-full transition-colors" aria-label="Search">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 md:h-6 md:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>

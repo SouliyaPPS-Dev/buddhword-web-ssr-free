@@ -133,11 +133,14 @@ class SearchController {
         foreach ($videos as $item) {
             if (($countByType['video'] ?? 0) >= self::MAX_PER_TYPE) break;
             if ($this->match($q, $item['ຊື່ພຣະສູດ'] ?? '') || $this->match($q, $item['ພຣະສູດ'] ?? '') || $this->match($q, $item['ໝວດທັມ'] ?? '')) {
+                $link = $item['link'] ?? '';
+                preg_match('/(?:youtu\.be\/|youtube\.com\/(?:.*v=|.*\/|.*embed\/|.*shorts\/))([\w-]+)/', $link, $matches);
+                $videoId = $matches[1] ?? ($item['ID'] ?? '');
                 $results[] = [
                     'type' => 'video',
                     'title' => $item['ຊື່ພຣະສູດ'] ?? '',
                     'detail' => mb_substr(strip_tags($item['ພຣະສູດ'] ?? ''), 0, 150) . '...',
-                    'url' => url('/video'),
+                    'url' => url('/video/view/' . $videoId),
                     'category' => 'Video'
                 ];
                 $countByType['video'] = ($countByType['video'] ?? 0) + 1;
