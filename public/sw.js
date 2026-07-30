@@ -5,9 +5,10 @@ function p(url) {
   return BASE + url.replace(/^\//, "");
 }
 
-var CACHE = "buddhaword-v9";
-var STATIC_CACHE = "buddhaword-static-v9";
-var ASSETS_CACHE = "buddhaword-assets-v9";
+var APP_VERSION = "10";
+var CACHE = "buddhaword-v" + APP_VERSION;
+var STATIC_CACHE = "buddhaword-static-v" + APP_VERSION;
+var ASSETS_CACHE = "buddhaword-assets-v" + APP_VERSION;
 var API_CACHE = "buddhaword-api-data";
 var OLD_API_PATTERN = "buddhaword-api-v";
 
@@ -201,21 +202,12 @@ self.addEventListener("fetch", function (event) {
       return;
     }
     event.respondWith(
-      fetch(request)
+      fetch(request, { cache: 'no-store' })
         .then(function (response) {
-          if (response && response.status === 200) {
-            var clone = response.clone();
-            caches.open(CACHE).then(function (cache) {
-              cache.put(request, clone);
-            });
-          }
           return response;
         })
         .catch(function () {
-          return caches.match(request).then(function (cached) {
-            if (cached) return cached;
-            return caches.match(p("/offline.html"));
-          });
+          return caches.match(p("/offline.html"));
         }),
     );
     return;
@@ -234,7 +226,7 @@ self.addEventListener("fetch", function (event) {
 
   if (url.pathname.includes("/api/")) {
     event.respondWith(
-      fetch(request)
+      fetch(request, { cache: 'no-store' })
         .then(function (response) {
           if (response && response.status === 200) {
             var clone = response.clone();
@@ -261,9 +253,8 @@ self.addEventListener("fetch", function (event) {
     )
   ) {
     event.respondWith(
-      caches.match(request).then(function (cached) {
-        if (cached) return cached;
-        return fetch(request).then(function (response) {
+      fetch(request, { cache: 'no-store' })
+        .then(function (response) {
           if (response && response.status === 200) {
             var clone = response.clone();
             caches.open(ASSETS_CACHE).then(function (cache) {
@@ -271,8 +262,10 @@ self.addEventListener("fetch", function (event) {
             });
           }
           return response;
-        });
-      }),
+        })
+        .catch(function () {
+          return caches.match(request);
+        }),
     );
     return;
   }

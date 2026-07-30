@@ -156,6 +156,12 @@ function splitTextChunks(text, maxLen) {
 
 function toggleTTS() {
     if (ttsPlaying) {
+        /* Browser speechSynthesis has no pause — just stop */
+        if (!ttsAudioCtx) {
+            speechSynthesis.cancel();
+            stopTTS();
+            return;
+        }
         if (ttsPaused) {
             ttsAudioCtx.resume();
             ttsPaused = false;
@@ -175,6 +181,26 @@ function toggleTTS() {
     stopTTS();
 
     var lang = detectLanguage(text);
+
+    if (typeof tryBrowserTTS === 'function') {
+        tryBrowserTTS(text, lang, function() {
+            startReaderServerTTS(text, lang, function() {
+                if ('speechSynthesis' in window && typeof speakBrowser === 'function') {
+                    speakBrowser({ text: text, lang: lang });
+                }
+            });
+        });
+        return;
+    }
+
+    startReaderServerTTS(text, lang, function() {
+        if ('speechSynthesis' in window && typeof speakBrowser === 'function') {
+            speakBrowser({ text: text, lang: lang });
+        }
+    });
+}
+
+function startReaderServerTTS(text, lang, fallbackFn) {
     var textEl = document.getElementById('readerContent');
     if (!textEl) return;
 
@@ -281,7 +307,10 @@ function toggleTTS() {
         .then(function(data) {
             if (!ttsPlaying) return;
             if (data.fallback) { return processChunk(i + 1); }
-            if (data.error) { if (i === 0) { stopTTS(); return; } return processChunk(i + 1); }
+            if (data.error) {
+                if (i === 0) { stopTTS(); if (fallbackFn) fallbackFn(); return; }
+                return processChunk(i + 1);
+            }
             var binary = atob(data.audioContent);
             var len = binary.length;
             var bytes = new Uint8Array(len);
@@ -301,7 +330,7 @@ function toggleTTS() {
         })
         .catch(function(e) {
             console.warn('TTS chunk ' + i + ' failed:', e);
-            if (i === 0) { stopTTS(); return; }
+            if (i === 0) { stopTTS(); if (fallbackFn) fallbackFn(); return; }
             processChunk(i + 1);
         });
     }

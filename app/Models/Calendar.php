@@ -17,8 +17,8 @@ class Calendar {
                     return [];
                 }
             } else {
-                $json = @file_get_contents($url);
-                if ($json) {
+                $json = httpGet($url);
+                if ($json !== null) {
                     if (!is_dir(dirname($cacheFile))) mkdir(dirname($cacheFile), 0777, true);
                     file_put_contents($cacheFile, $json);
                 } elseif (file_exists($cacheFile)) {

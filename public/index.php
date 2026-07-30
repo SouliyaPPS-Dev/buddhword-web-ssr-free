@@ -54,6 +54,7 @@ spl_autoload_register(function ($class) {
 
 // Load Helpers
 require_once __DIR__ . '/../app/Helpers/view.php';
+require_once __DIR__ . '/../app/Helpers/http.php';
 
 // Send security headers
 if ($isProduction) {
