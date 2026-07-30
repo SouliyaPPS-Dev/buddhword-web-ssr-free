@@ -74,6 +74,10 @@ sort($dharmaCategories);
             const navbar = document.getElementById('navbarWrapper');
             this.navbarHidden = navbar?.classList.contains('-translate-y-full') ?? false;
         }, { passive: true });
+
+        window.addEventListener('sync-complete', () => {
+            this.fetchVideos();
+        });
     }
 }" class="flex flex-col items-center justify-center mb-5 page-enter">
     

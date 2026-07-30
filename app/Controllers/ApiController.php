@@ -18,10 +18,10 @@ class ApiController {
         header('Content-Type: application/json');
         try {
             set_time_limit(60);
-            Sutra::getAll(true);
+            $sutras = Sutra::getAll(true);
             $cacheFile = __DIR__ . '/../../storage/cache/sutra_api.json';
             $version = file_exists($cacheFile) ? filemtime($cacheFile) : time();
-            echo json_encode(['success' => true, 'version' => $version], JSON_UNESCAPED_UNICODE);
+            echo json_encode(['success' => true, 'data' => $sutras, 'version' => $version], JSON_UNESCAPED_UNICODE);
         } catch (\Exception $e) {
             http_response_code(500);
             echo json_encode(['success' => false, 'message' => $e->getMessage()], JSON_UNESCAPED_UNICODE);

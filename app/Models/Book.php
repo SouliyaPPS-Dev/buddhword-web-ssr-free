@@ -9,7 +9,7 @@ class Book {
         if (!$refresh && file_exists($cacheFile) && (time() - filemtime($cacheFile) < $cacheTime)) {
             $json = file_get_contents($cacheFile);
         } else {
-            $url = $_ENV['BOOK_API_URL'] ?? '';
+            $url = $_ENV['BOOK_API_URL'] ?? getenv('BOOK_API_URL') ?: '';
             if (!$url) {
                 if (file_exists($cacheFile)) {
                     $json = file_get_contents($cacheFile);

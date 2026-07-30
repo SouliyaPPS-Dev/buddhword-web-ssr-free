@@ -16,7 +16,7 @@ class Sutra {
         if (!$refresh && file_exists($cacheFile) && (time() - filemtime($cacheFile) < $cacheTime)) {
             $json = file_get_contents($cacheFile);
         } else {
-            $url = $_ENV['SUTRA_API_URL'] ?? null;
+            $url = $_ENV['SUTRA_API_URL'] ?? getenv('SUTRA_API_URL') ?: null;
             if (!$url) {
                 if (file_exists($cacheFile)) {
                     $json = file_get_contents($cacheFile);

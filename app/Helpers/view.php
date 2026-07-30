@@ -1,7 +1,7 @@
 <?php
 
 function getSiteUrl() {
-    $siteUrl = $_ENV['SITE_URL'] ?? '';
+    $siteUrl = $_ENV['SITE_URL'] ?? getenv('SITE_URL') ?: '';
     $canonical = 'https://buddhaword-web.hf.space';
 
     // If SITE_URL is set and it's a free.nf address, override to canonical

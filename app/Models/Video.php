@@ -9,7 +9,7 @@ class Video {
         if (!$refresh && file_exists($cacheFile) && (time() - filemtime($cacheFile) < $cacheTime)) {
             $json = file_get_contents($cacheFile);
         } else {
-            $url = $_ENV['VIDEO_API_URL'] ?? '';
+            $url = $_ENV['VIDEO_API_URL'] ?? getenv('VIDEO_API_URL') ?: '';
             if (!$url) {
                 if (file_exists($cacheFile)) {
                     $json = file_get_contents($cacheFile);

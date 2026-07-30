@@ -159,30 +159,86 @@
 
     <script>
     var ttsWords = [];
+    function wrapTTSText(textEl) {
+        if (!textEl) return;
+        if (typeof ttsOrigHTML === 'undefined' || ttsOrigHTML === null) {
+            ttsOrigHTML = textEl.innerHTML;
+        }
+        if (textEl.querySelector('.tts-w')) return;
+        textEl.innerHTML = textEl.innerHTML.replace(/(<[^>]+>)|(\S+)|(\s+)/gi, function(m, tag) {
+            if (tag) return tag;
+            return '<span class="tts-w">' + m + '</span>';
+        });
+    }
+    /* Helper: tries browser Lao TTS; calls onNoVoice if no Lao voice available */
+    function tryBrowserTTS(text, lang, onNoVoice) {
+        if (!('speechSynthesis' in window) || typeof speakBrowser !== 'function') {
+            if (typeof onNoVoice === 'function') onNoVoice();
+            return;
+        }
+        var voices = speechSynthesis.getVoices();
+        if (voices.length === 0) {
+            var handler = function() {
+                speechSynthesis.removeEventListener('voiceschanged', handler);
+                var v = speechSynthesis.getVoices();
+                if (v.some(function(x) { return x.lang.startsWith('lo'); })) {
+                    speakBrowser({ text: text, lang: lang });
+                } else if (typeof onNoVoice === 'function') {
+                    onNoVoice();
+                }
+            };
+            speechSynthesis.addEventListener('voiceschanged', handler);
+            return;
+        }
+        if (voices.some(function(v) { return v.lang.startsWith('lo'); })) {
+            speakBrowser({ text: text, lang: lang });
+        } else if (typeof onNoVoice === 'function') {
+            onNoVoice();
+        }
+    }
+
+    /* Browser speechSynthesis with word highlighting */
     function speakBrowser(opt) {
         if (!('speechSynthesis' in window) || !opt || !opt.text) return;
         try {
             speechSynthesis.cancel();
+            if (typeof stopTTS === 'function') stopTTS();
             var text = opt.text;
             var lang = { 'lo-LA': 'lo-LA', 'th-TH': 'th-TH', 'en-US': 'en-US' }[opt.lang] || 'lo-LA';
+            var textEl = document.getElementById('sutraText') || document.getElementById('readerContent');
+            if (!textEl) { _restoreBrowserDOM(); return; }
+            wrapTTSText(textEl);
             ttsWords = [].slice.call(document.querySelectorAll('.tts-w'));
+            window.ttsPlaying = true;
+            var btn = document.getElementById('ttsBtn');
+            if (btn) { btn.classList.remove('text-white/70'); btn.classList.add('text-green-300', 'bg-green-500/20'); }
 
             var doSpeak = function() {
                 var u = new SpeechSynthesisUtterance(text);
-                u.lang = lang;
                 u.rate = 0.85;
 
                 var voices = speechSynthesis.getVoices();
-                var match = voices.find(function(v) { return v.lang.startsWith(lang.split('-')[0]); });
-                if (match) {
+                if (lang === 'lo-LA') {
+                    var match = voices.find(function(v) { return v.lang === 'lo-LA'; })
+                            || voices.find(function(v) { return v.lang.startsWith('lo'); });
+                    if (!match) {
+                        clearInterval(timer);
+                        ttsWords = [];
+                        _restoreBrowserDOM();
+                        return;
+                    }
                     u.voice = match;
-                } else if (lang === 'lo-LA') {
-                    // No Lao voice — try Thai (linguistically closest)
-                    var thaiVoice = voices.find(function(v) { return v.lang.startsWith('th'); });
-                    if (thaiVoice) u.voice = thaiVoice;
+                } else if (lang === 'th-TH') {
+                    u.voice = voices.find(function(v) { return v.lang === 'th-TH'; })
+                           || voices.find(function(v) { return v.lang.startsWith('th'); })
+                           || voices.find(function(v) { return v.lang.startsWith('en'); })
+                           || voices[0];
                 } else {
-                    return;
+                    u.voice = voices.find(function(v) { return v.lang.startsWith('en-US'); })
+                           || voices.find(function(v) { return v.lang.startsWith('en'); })
+                           || voices[0];
                 }
+                u.lang = lang;
 
                 if (ttsWords.length > 0) {
                     var wordRanges = [];
@@ -195,7 +251,6 @@
                     var lastIdx = -1;
                     var startTime = null;
 
-                    // Build cumulative character-position array for time-based estimation
                     var charPositions = [];
                     var totalChars = 0;
                     for (var i = 0; i < wordCount; i++) {
@@ -207,16 +262,11 @@
                         startTime = performance.now();
                     };
 
-                    // Primary: time-based estimation (works for all languages)
                     var timer = setInterval(function() {
                         if (!startTime || wordCount === 0 || !ttsWords.length) return;
                         var elapsed = performance.now() - startTime;
-                        // ~8.5 chars/sec for Lao at rate 0.85
                         var estimatedChars = elapsed * 0.0085;
-                        if (estimatedChars >= totalChars) {
-                            estimatedChars = totalChars - 1;
-                        }
-                        // Binary search: find word at this character position
+                        if (estimatedChars >= totalChars) estimatedChars = totalChars - 1;
                         var lo = 0, hi = wordCount - 1;
                         while (lo <= hi) {
                             var mid = (lo + hi) >>> 1;
@@ -234,7 +284,6 @@
                         }
                     }, 40);
 
-                    // Corrector: onboundary fires when available (may be unreliable for Lao)
                     u.onboundary = function(e) {
                         if (e.name !== 'word' || wordCount === 0) return;
                         var ci = e.charIndex;
@@ -262,26 +311,32 @@
                         _restoreBrowserDOM();
                     }, { once: true });
                 } else {
-                    u.addEventListener('end', function() {
-                        _restoreBrowserDOM();
-                    }, { once: true });
+                    u.addEventListener('end', function() { _restoreBrowserDOM(); }, { once: true });
                 }
                 speechSynthesis.speak(u);
             };
 
             function _restoreBrowserDOM() {
-                window.ttsPlaying = false;
-                var icon = document.getElementById('ttsIcon');
-                if (icon) { icon.classList.remove('fa-stop'); icon.classList.add('fa-play'); }
-                var btn = document.getElementById('ttsBtn');
-                if (btn) {
-                    btn.classList.remove('text-green-300', 'bg-green-500/20');
-                    btn.classList.add('text-white/70');
-                }
+                try {
+                    window.ttsPlaying = false;
+                    if (typeof ttsPlaying !== 'undefined') ttsPlaying = false;
+                    if (typeof updateTTSIcon === 'function') updateTTSIcon();
+                    var icon = document.getElementById('ttsIcon');
+                    var btn = document.getElementById('ttsBtn');
+                    if (btn) {
+                        btn.classList.remove('text-green-300', 'bg-green-500/20');
+                        btn.classList.add('text-white/70');
+                    }
+                    var controls = document.getElementById('ttsControls');
+                    if (controls) controls.style.display = 'none';
+                    if (typeof updateTTSPlayPauseIcon === 'function') updateTTSPlayPauseIcon(false);
+                    if (typeof ttsOrigHTML !== 'undefined' && ttsOrigHTML) {
+                        var el = document.getElementById('sutraText') || document.getElementById('readerContent');
+                        if (el) { el.innerHTML = ttsOrigHTML; ttsOrigHTML = null; }
+                    }
+                } catch(e) {}
             }
 
-            // iOS Safari: getVoices() returns empty until 'voiceschanged' fires.
-            // Without loaded voices, no lang match is found and English is used.
             if (speechSynthesis.getVoices().length === 0) {
                 var handler = function() {
                     speechSynthesis.removeEventListener('voiceschanged', handler);
@@ -742,6 +797,10 @@
             this.checkForUpdates();
             this.restoreSearchState();
             this.$watch('searchQuery', (value) => this.saveSearchState());
+            /* Auto-sync when online on page load if no cached data */
+            if (navigator.onLine && !localStorage.getItem('buddhaword_sutras')) {
+                this.syncData(true);
+            }
         }
     }">
         <div id="navbarWrapper" class="fixed top-0 left-0 right-0 z-50 transition-transform duration-300">
@@ -1064,6 +1123,28 @@
             window.history.replaceState({}, document.title, url.pathname + url.search);
         }
     });
+
+    /* Force clear stale caches on version mismatch to always show latest UI */
+    (function() {
+        var appVer = '10';
+        var cachedVer = localStorage.getItem('buddhaword_app_version');
+        if (cachedVer !== appVer) {
+            var reloaded = sessionStorage.getItem('buddhaword_cache_cleared');
+            if (!reloaded) {
+                sessionStorage.setItem('buddhaword_cache_cleared', '1');
+                if ('caches' in window) {
+                    caches.keys().then(function(keys) {
+                        return Promise.all(keys.map(function(k) { return caches.delete(k); }));
+                    }).catch(function() {});
+                }
+                if (typeof bwdb !== 'undefined') {
+                    try { bwdb.clearAll(); } catch(e) {}
+                }
+                localStorage.setItem('buddhaword_app_version', appVer);
+                window.location.reload(true);
+            }
+        }
+    })();
  
     /* Auto-hide navbar & bottom nav on scroll */
     (function() {
