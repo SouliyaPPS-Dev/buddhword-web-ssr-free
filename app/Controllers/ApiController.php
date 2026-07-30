@@ -71,7 +71,6 @@ class ApiController {
             $category = $_GET['category'] ?? '';
 
             $videos = Video::getAll();
-            $videos = array_reverse($videos);
 
             if ($search !== '') {
                 $searchTerm = mb_strtolower(trim($search));
@@ -88,12 +87,7 @@ class ApiController {
                 });
             }
 
-            $videos = array_values(array_map(function($v) {
-                $v['_thumbnail'] = $this->getThumbnailUrl($v['link'] ?? '');
-                preg_match('/(?:youtu\.be\/|youtube\.com\/(?:.*v=|.*\/|.*embed\/|.*shorts\/))([\w-]+)/', $v['link'] ?? '', $m);
-                $v['_ytId'] = $m[1] ?? '';
-                return $v;
-            }, $videos));
+            $videos = array_values($videos);
 
             echo json_encode(['success' => true, 'data' => $videos], JSON_UNESCAPED_UNICODE);
         } catch (\Exception $e) {

@@ -5,7 +5,7 @@ use App\Models\Video;
 
 class VideoController {
     public function index() {
-        $videos = array_reverse(Video::getAll());
+        $videos = Video::getAll();
  
         $jsonLd = [
             '@context' => 'https://schema.org',

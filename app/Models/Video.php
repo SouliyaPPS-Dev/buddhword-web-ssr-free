@@ -59,6 +59,6 @@ class Video {
             }
         }
 
-        return $transformed;
+        return array_reverse($transformed);
     }
 }
