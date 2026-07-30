@@ -1,85 +1,107 @@
-<section x-data="{ 
-    searchTerm: '',
-    allSutras: [],
-    searchResults: [],
-    isLoading: true,
-    isSearching: false,
-    navbarHidden: false,
-    searchController: null,
-    init() {
-        const cached = localStorage.getItem('buddhaword_sutras');
-        if (cached) {
-            try {
-                this.allSutras = JSON.parse(cached);
-                if (!Array.isArray(this.allSutras)) this.allSutras = Object.values(this.allSutras);
-            } catch (e) {
-                console.error('Failed to parse cached sutras', e);
-            }
-        }
-        this.isLoading = false;
-        window.dispatchEvent(new CustomEvent('app-data-ready'));
-
-        if (!cached) {
-            fetch('<?= url('/api/sync-sutras') ?>')
-                .then(r => r.ok ? r.json() : Promise.reject())
-                .then(res => {
-                    if (res.success && res.data) {
-                        localStorage.setItem('buddhaword_sutras', JSON.stringify(res.data));
-                        this.allSutras = res.data;
+<script>
+document.addEventListener('alpine:init', function() {
+    Alpine.data('sutraIndex', function() {
+        return {
+            searchTerm: '',
+            allSutras: [],
+            searchResults: [],
+            categories: <?= json_encode($categories) ?>,
+            isLoading: true,
+            isSearching: false,
+            navbarHidden: false,
+            searchController: null,
+            imageBaseUrl: '<?= url('images/sutra/') ?>',
+            fallbackImage: '<?= url('assets/images/logo.png') ?>',
+            categoryBaseUrl: '<?= url('/sutra/') ?>',
+            init() {
+                const cached = localStorage.getItem('buddhaword_sutras');
+                if (cached) {
+                    try {
+                        this.allSutras = JSON.parse(cached);
                         if (!Array.isArray(this.allSutras)) this.allSutras = Object.values(this.allSutras);
+                    } catch (e) {
+                        console.error('Failed to parse cached sutras', e);
                     }
-                })
-                .catch(() => {});
-        }
-
-        window.addEventListener('scroll', () => {
-            const navbar = document.getElementById('navbarWrapper');
-            this.navbarHidden = navbar?.classList.contains('-translate-y-full') ?? false;
-        }, { passive: true });
-
-        window.addEventListener('sync-complete', () => {
-            const freshData = localStorage.getItem('buddhaword_sutras');
-            if (freshData) {
-                this.allSutras = JSON.parse(freshData);
-                if (!Array.isArray(this.allSutras)) this.allSutras = Object.values(this.allSutras);
+                }
+                this.rebuildCategories();
+                this.isLoading = false;
                 window.dispatchEvent(new CustomEvent('app-data-ready'));
+
+                fetch('<?= url('/api/sync-sutras') ?>')
+                    .then(r => r.ok ? r.json() : Promise.reject())
+                    .then(res => {
+                        if (res.success && res.data) {
+                            localStorage.setItem('buddhaword_sutras', JSON.stringify(res.data));
+                            this.allSutras = res.data;
+                            if (!Array.isArray(this.allSutras)) this.allSutras = Object.values(this.allSutras);
+                            this.rebuildCategories();
+                        }
+                    })
+                    .catch(function() {});
+
+                window.addEventListener('scroll', function() {
+                    var navbar = document.getElementById('navbarWrapper');
+                    this.navbarHidden = navbar && navbar.classList.contains('-translate-y-full');
+                }.bind(this), { passive: true });
+
+                window.addEventListener('sync-complete', function() {
+                    var freshData = localStorage.getItem('buddhaword_sutras');
+                    if (freshData) {
+                        this.allSutras = JSON.parse(freshData);
+                        if (!Array.isArray(this.allSutras)) this.allSutras = Object.values(this.allSutras);
+                        this.rebuildCategories();
+                        window.dispatchEvent(new CustomEvent('app-data-ready'));
+                    }
+                }.bind(this));
+            },
+            rebuildCategories() {
+                if (!Array.isArray(this.allSutras) || this.allSutras.length === 0) return;
+                var fromData = [...new Set(this.allSutras.map(function(s) { return s['ໝວດທັມ']; }).filter(Boolean))];
+                var avail = <?= json_encode($categories) ?>;
+                var result = fromData.filter(function(c) { return avail.includes(c); });
+                if (result.length > 0) {
+                    this.categories = result;
+                }
+            },
+            escapeHtml(str) {
+                var div = document.createElement('div');
+                div.textContent = str;
+                return div.innerHTML;
+            },
+            highlight(text) {
+                if (!text) return '';
+                var term = this.searchTerm;
+                if (!term || term.trim().length < 2) return this.escapeHtml(text);
+                var escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                var regex = new RegExp('(' + escaped + ')', 'gi');
+                return this.escapeHtml(text).replace(regex, '<span class=&quot;bg-yellow-200 font-bold text-black&quot;>$1</span>');
+            },
+            async performSearch() {
+                if (this.searchTerm.trim().length < 2) {
+                    this.searchResults = [];
+                    return;
+                }
+                if (this.searchController) this.searchController.abort();
+                var ac = new AbortController();
+                this.searchController = ac;
+                this.isSearching = true;
+                try {
+                    var response = await fetch('<?= url('/api/search') ?>?q=' + encodeURIComponent(this.searchTerm), { signal: ac.signal });
+                    if (!ac.signal.aborted) {
+                        var data = await response.json();
+                        this.searchResults = data.results || [];
+                    }
+                } catch (e) {
+                    if (e.name !== 'AbortError') console.error('Search failed', e);
+                } finally {
+                    if (!ac.signal.aborted) this.isSearching = false;
+                }
             }
-        });
-    },
-    escapeHtml(str) {
-        const div = document.createElement('div');
-        div.textContent = str;
-        return div.innerHTML;
-    },
-    highlight(text) {
-        if (!text) return '';
-        const term = this.searchTerm;
-        if (!term || term.trim().length < 2) return this.escapeHtml(text);
-        const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const regex = new RegExp(`(${escaped})`, 'gi');
-        return this.escapeHtml(text).replace(regex, '<span class=&quot;bg-yellow-200 font-bold text-black&quot;>$1</span>');
-    },
-    async performSearch() {
-        if (this.searchTerm.trim().length < 2) {
-            this.searchResults = [];
-            return;
-        }
-        if (this.searchController) this.searchController.abort();
-        const ac = new AbortController();
-        this.searchController = ac;
-        this.isSearching = true;
-        try {
-            const response = await fetch('<?= url('/api/search') ?>?q=' + encodeURIComponent(this.searchTerm), { signal: ac.signal });
-            if (!ac.signal.aborted) {
-                this.searchResults = await response.json();
-            }
-        } catch (e) {
-            if (e.name !== 'AbortError') console.error('Search failed', e);
-        } finally {
-            if (!ac.signal.aborted) this.isSearching = false;
-        }
-    }
-}" class="flex flex-col items-center justify-center mb-4 px-4 sm:px-6 lg:px-8 page-enter">
+        };
+    });
+});
+</script>
+<section x-data="sutraIndex" class="flex flex-col items-center justify-center mb-4 px-4 sm:px-6 lg:px-8 page-enter">
     
     <!-- Search Bar -->
     <div class="mt-3 sticky z-20 w-full max-w-lg mx-auto px-4 mb-4" :class="navbarHidden ? 'top-0' : 'top-[60px]'">
@@ -99,22 +121,18 @@
 
     <!-- Category Render (shown when search is empty) -->
     <div x-show="searchTerm.trim() === ''" class="grid gap-3 sm:gap-4 md:gap-5 lg:gap-6 grid-cols-3 lg:grid-cols-5 w-full max-w-5xl mb-20">
-        <?php foreach ($categories as $category): ?>
-            <?php 
-                $categoryUrl = url('/sutra/' . urlencode($category));
-                $imageUrl = url('images/sutra/' . $category . '.jpg');
-            ?>
-            <a href="<?= $categoryUrl ?>" class="flex justify-center items-center cursor-pointer">
+        <template x-for="category in categories" :key="category">
+            <a :href="categoryBaseUrl + encodeURIComponent(category)" class="flex justify-center items-center cursor-pointer">
                 <div class="w-full max-w-[280px] h-auto rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02]">
-                    <img src="<?= $imageUrl ?>" 
-                         alt="<?= htmlspecialchars($category) ?>" 
+                    <img :src="imageBaseUrl + encodeURIComponent(category) + '.jpg'" 
+                         :alt="category" 
                          loading="lazy"
                          width="280" height="280"
                          class="w-full h-full object-contain bg-white/5 transition-all duration-300" 
-                         onerror="this.src='<?= url('assets/images/logo.png') ?>'; this.className='w-full h-full object-contain p-4 sm:p-8 bg-gray-50 opacity-50'">
+                         @error.once="$el.src=fallbackImage; $el.className='w-full h-full object-contain p-4 sm:p-8 bg-gray-50 opacity-50'">
                 </div>
             </a>
-        <?php endforeach; ?>
+        </template>
     </div>
 
     <!-- Search Results Render -->

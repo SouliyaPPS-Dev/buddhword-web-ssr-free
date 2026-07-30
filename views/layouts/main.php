@@ -798,12 +798,9 @@
             this.checkForUpdates();
             this.restoreSearchState();
             this.$watch('searchQuery', (value) => this.saveSearchState());
-            /* Auto-sync when online on page load (throttled to once per 5 min) */
+            /* Auto-sync when online — always fetch latest from Google Sheets (30s server debounce) */
             if (navigator.onLine) {
-                const lastSync = parseInt(localStorage.getItem('buddhaword_last_sync') || '0', 10);
-                if (!localStorage.getItem('buddhaword_sutras') || Date.now() - lastSync > 300000) {
-                    this.syncData(true);
-                }
+                this.syncData(true);
             }
         }
     }">
