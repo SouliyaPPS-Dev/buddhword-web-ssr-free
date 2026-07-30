@@ -42,6 +42,19 @@ class Video {
                 $rowObject[$header] = $row[$index] ?? "";
             }
             if (!empty(array_filter($rowObject))) {
+                $link = $rowObject['link'] ?? '';
+                preg_match('/(?:youtu\.be\/|youtube\.com\/(?:.*v=|.*\/|.*embed\/|.*shorts\/))([\w-]+)/', $link, $m);
+                $rowObject['_ytId'] = $m[1] ?? '';
+                $rowObject['_thumbnail'] = '';
+                if ($rowObject['_ytId']) {
+                    $rowObject['_thumbnail'] = "https://img.youtube.com/vi/{$rowObject['_ytId']}/hqdefault.jpg";
+                } elseif (strpos($link, 'drive.google.com') !== false) {
+                    preg_match('/(?:drive\.google\.com\/(?:.*\/d\/|file\/d\/))([a-zA-Z0-9_-]+)/', $link, $dm);
+                    $fileId = $dm[1] ?? '';
+                    if ($fileId) {
+                        $rowObject['_thumbnail'] = "https://lh3.googleusercontent.com/d/{$fileId}=s320?authuser=0";
+                    }
+                }
                 $transformed[] = $rowObject;
             }
         }
