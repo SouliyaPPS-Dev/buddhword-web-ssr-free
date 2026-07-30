@@ -12,4 +12,3 @@ composer.phar
 .vscode/
 .antigravitycli/
 PROMPT_INIT.md
-storage/cache/*.json
