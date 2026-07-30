@@ -27,6 +27,7 @@ sort($dharmaCategories);
     searchTerm: '',
     selectedDharma: '',
     navbarHidden: false,
+    allVideos: [],
     videos: [],
     _timer: null,
     escapeHtml(str) {
@@ -55,6 +56,18 @@ sort($dharmaCategories);
             this.videos = [];
         }
     },
+    async fetchAllVideos() {
+        try {
+            const res = await fetch('<?= url('/api/videos') ?>');
+            const data = await res.json();
+            if (data.data) {
+                this.allVideos = data.data;
+                localStorage.setItem('buddhaword_videos', JSON.stringify(data.data));
+            }
+        } catch (e) {
+            console.error('Failed to fetch all videos', e);
+        }
+    },
     onSearchInput() {
         clearTimeout(this._timer);
         if (!this.searchTerm.trim() && !this.selectedDharma) return;
@@ -68,6 +81,19 @@ sort($dharmaCategories);
         this.fetchVideos();
     },
     init() {
+        const cached = localStorage.getItem('buddhaword_videos');
+        if (cached) {
+            try { this.allVideos = JSON.parse(cached); } catch (e) {}
+        }
+        if (!this.allVideos || this.allVideos.length === 0) {
+            const dataEl = document.getElementById('videos-data');
+            if (dataEl) {
+                try { this.allVideos = JSON.parse(dataEl.textContent); } catch (e) { console.error('Failed to parse videos data', e); }
+            }
+        }
+        if (!this.allVideos || this.allVideos.length === 0) {
+            this.fetchAllVideos();
+        }
         window.dispatchEvent(new CustomEvent('app-data-ready'));
 
         window.addEventListener('scroll', () => {
@@ -76,7 +102,7 @@ sort($dharmaCategories);
         }, { passive: true });
 
         window.addEventListener('sync-complete', () => {
-            this.fetchVideos();
+            this.fetchAllVideos();
         });
     }
 }" class="flex flex-col items-center justify-center mb-5 page-enter">
@@ -119,19 +145,24 @@ sort($dharmaCategories);
     <!-- Spacer for sticky filters -->
     <div class="h-2"></div>
 
-    <!-- Server-rendered Videos Grid (shown by default, hidden when search/filter active) -->
-    <div x-show="searchTerm === '' && selectedDharma === ''" class="grid gap-3 sm:gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 mb-20 w-full max-w-5xl px-2">
-        <?php foreach ($videosWithThumbs as $video): ?>
+    <!-- Loading indicator for initial fetch -->
+    <div x-show="searchTerm === '' && selectedDharma === '' && (!allVideos || allVideos.length === 0)" class="flex justify-center p-10">
+        <div class="loader"></div>
+    </div>
+
+    <!-- Videos Grid (Alpine-rendered, shown when no search/filter active) -->
+    <div x-show="searchTerm === '' && selectedDharma === '' && allVideos && allVideos.length > 0" class="grid gap-3 sm:gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 mb-20 w-full max-w-5xl px-2">
+        <template x-for="video in allVideos" :key="video.ID">
             <div class="flex flex-col items-center" style="margin-bottom: -2rem;">
-                <a href="<?= url('/video/view/' . htmlspecialchars($video['_ytId'])) ?>"
+                <a :href="'<?= url('/video/view/') ?>' + video._ytId"
                    class="z-10 flex flex-col justify-between items-center cursor-pointer group w-full">
                     <div class="mt-6 text-center px-1 w-full">
-                        <p class="text-xs sm:text-sm font-bold text-[#DDCFBC] truncate Lao-font drop-shadow-sm group-hover:text-[#EEDDB6] transition-colors"><?= htmlspecialchars($video['ຊື່ພຣະສູດ'] ?? '') ?></p>
+                        <p class="text-xs sm:text-sm font-bold text-[#DDCFBC] truncate Lao-font drop-shadow-sm group-hover:text-[#EEDDB6] transition-colors" x-html="escapeHtml(video['\u0e8a\u0eb7\u0ec8\u0e9e\u0ea3\u0eb0\u0eaa\u0eb9\u0e94'] || '')"></p>
                     </div>
                     <div class="mt-1 w-full aspect-video flex-shrink-0 shadow-xl transition-transform duration-300 transform group-hover:-translate-y-2 overflow-hidden relative"
                          style="border-radius: 0; background: transparent; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2), 0 4px 6px -2px rgba(0,0,0,0.1), inset 0 -3px 6px rgba(0,0,0,0.2);">
-                        <img src="<?= htmlspecialchars($video['_thumbnail'] ?? url('assets/images/logo.png')) ?>"
-                             alt="<?= htmlspecialchars($video['ຊື່ພຣະສູດ'] ?? '') ?>"
+                        <img :src="video._thumbnail || '<?= url('assets/images/logo.png') ?>'"
+                             :alt="video['\u0e8a\u0eb7\u0ec8\u0e9e\u0ea3\u0eb0\u0eaa\u0eb9\u0e94'] || ''"
                              loading="lazy"
                              class="z-0 object-cover w-full h-full transition-transform duration-300 group-hover:scale-110"
                              style="border-radius: 0;"
@@ -153,7 +184,7 @@ sort($dharmaCategories);
                     <div class="absolute -top-2 left-2 w-[96%] h-4 bg-black opacity-10 blur-md"></div>
                 </div>
             </div>
-        <?php endforeach; ?>
+        </template>
     </div>
 
     <!-- Alpine-filtered Videos Grid (hidden by default, shown when search/filter active) -->

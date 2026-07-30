@@ -85,6 +85,17 @@
                 try { this.events = JSON.parse(dataEl.textContent); } catch (e) { console.error('Failed to parse events data', e); }
             }
         }
+        if (!this.events || this.events.length === 0) {
+            fetch('<?= url('/api/sync-calendar') ?>')
+                .then(r => r.ok ? r.json() : Promise.reject())
+                .then(res => {
+                    if (res.success && res.data) {
+                        localStorage.setItem('buddhaword_calendar', JSON.stringify(res.data));
+                        this.events = res.data;
+                    }
+                })
+                .catch(() => {});
+        }
         window.dispatchEvent(new CustomEvent('app-data-ready'));
 
         window.addEventListener('sync-complete', () => {

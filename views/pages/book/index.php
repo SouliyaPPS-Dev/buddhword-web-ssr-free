@@ -41,6 +41,17 @@
                 try { this.books = JSON.parse(dataEl.textContent); } catch (e) { console.error('Failed to parse books data', e); }
             }
         }
+        if (!this.books || this.books.length === 0) {
+            fetch('<?= url('/api/sync-books') ?>')
+                .then(r => r.ok ? r.json() : Promise.reject())
+                .then(res => {
+                    if (res.success && res.data) {
+                        localStorage.setItem('buddhaword_books', JSON.stringify(res.data));
+                        this.books = res.data;
+                    }
+                })
+                .catch(() => {});
+        }
         window.dispatchEvent(new CustomEvent('app-data-ready'));
 
         window.addEventListener('sync-complete', () => {
