@@ -730,6 +730,7 @@
                 }
 
                 sessionStorage.clear();
+                localStorage.setItem('buddhaword_last_sync', Date.now().toString());
 
                 if (!isSilent) {
                     Swal.fire({
@@ -797,9 +798,12 @@
             this.checkForUpdates();
             this.restoreSearchState();
             this.$watch('searchQuery', (value) => this.saveSearchState());
-            /* Auto-sync when online on page load if no cached data */
-            if (navigator.onLine && !localStorage.getItem('buddhaword_sutras')) {
-                this.syncData(true);
+            /* Auto-sync when online on page load (throttled to once per 5 min) */
+            if (navigator.onLine) {
+                const lastSync = parseInt(localStorage.getItem('buddhaword_last_sync') || '0', 10);
+                if (!localStorage.getItem('buddhaword_sutras') || Date.now() - lastSync > 300000) {
+                    this.syncData(true);
+                }
             }
         }
     }">
