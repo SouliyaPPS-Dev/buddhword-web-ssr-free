@@ -529,6 +529,20 @@
         setTimeout(hideSplash, 10000);
     })();
     </script>
+    <script>
+    /* Deduplicate concurrent identical GET requests (same URL) so the same API
+       is never fetched twice at once, e.g. page component + layout auto-sync. */
+    window.fetchDedup = (function() {
+        var inflight = {};
+        return function(url, options) {
+            var key = String(url);
+            if (inflight[key]) return inflight[key];
+            var p = fetch(url, options).finally(function() { delete inflight[key]; });
+            inflight[key] = p;
+            return p;
+        };
+    })();
+    </script>
     <div x-data="{ 
         isMenuOpen: false, 
         isSearchOpen: false,
@@ -660,42 +674,18 @@
             }
 
             try {
-                const signal = (ms) => {
-                    const c = new AbortController();
-                    setTimeout(() => c.abort(), ms);
-                    return c.signal;
-                };
-                const [sutrasRes, booksRes, videosRes, calendarRes] = await Promise.all([
-                    fetch('<?= url('/api/sync-sutras') ?>', { signal: signal(120000) }).then(r => r.ok ? r.json() : { success: false }),
-                    fetch('<?= url('/api/sync-books') ?>', { signal: signal(120000) }).then(r => r.ok ? r.json() : { success: false }),
-                    fetch('<?= url('/api/sync-videos') ?>', { signal: signal(120000) }).then(r => r.ok ? r.json() : { success: false }),
-                    fetch('<?= url('/api/sync-calendar') ?>', { signal: signal(120000) }).then(r => r.ok ? r.json() : { success: false }),
-                ]);
+                const results = await this.requestSyncEndpoints({
+                    sutras: { url: '<?= url('/api/sync-sutras') ?>', key: 'buddhaword_sutras', version: true },
+                    books: { url: '<?= url('/api/sync-books') ?>', key: 'buddhaword_books', version: false },
+                    videos: { url: '<?= url('/api/sync-videos') ?>', key: 'buddhaword_videos', version: false },
+                    calendar: { url: '<?= url('/api/sync-calendar') ?>', key: 'buddhaword_calendar', version: false },
+                });
+                const sutrasRes = results.sutras || { success: false };
+                const booksRes = results.books || { success: false };
+                const videosRes = results.videos || { success: false };
+                const calendarRes = results.calendar || { success: false };
 
-                let allOk = true;
-                if (sutrasRes.success) {
-                    if (sutrasRes.data) {
-                        localStorage.setItem('buddhaword_sutras', JSON.stringify(sutrasRes.data));
-                    }
-                    if (sutrasRes.version) {
-                        localStorage.setItem('buddhaword_version', sutrasRes.version.toString());
-                        this.cachedVersion = sutrasRes.version;
-                        this.hasUpdate = false;
-                    }
-                } else { allOk = false; }
-
-                if (booksRes.success) {
-                    localStorage.setItem('buddhaword_books', JSON.stringify(booksRes.data));
-                } else { allOk = false; }
-
-                if (videosRes.success) {
-                    localStorage.setItem('buddhaword_videos', JSON.stringify(videosRes.data));
-                } else { allOk = false; }
-
-                if (calendarRes.success) {
-                    localStorage.setItem('buddhaword_calendar', JSON.stringify(calendarRes.data));
-                } else { allOk = false; }
-
+                const allOk = sutrasRes.success && booksRes.success && videosRes.success && calendarRes.success;
                 if (!allOk) throw new Error('ບາງຂໍ້ມູນບໍ່ສາມາດອັບເດດໄດ້');
 
                 if (navigator.serviceWorker.controller) {
@@ -768,6 +758,91 @@
                 /* silently fail */
             }
         },
+
+        getPageRoute() {
+            const base = '<?= url('/') ?>';
+            const basePath = (base || '/').replace(/\/+$/, '');
+            const path = window.location.pathname;
+            if (basePath && basePath !== '/' && path.startsWith(basePath)) {
+                return path.slice(basePath.length) || '/';
+            }
+            return path || '/';
+        },
+
+        pageDatasets() {
+            const route = this.getPageRoute();
+            if (route === '/' || route === '/favorites' || route.startsWith('/sutra')) return ['sutras'];
+            if (route.startsWith('/book')) return ['books'];
+            if (route.startsWith('/video')) return ['videos'];
+            if (route.startsWith('/calendar')) return ['calendar'];
+            return [];
+        },
+
+        syncEndpoints() {
+            return {
+                sutras: { url: '<?= url('/api/sync-sutras') ?>', key: 'buddhaword_sutras', version: true },
+                books: { url: '<?= url('/api/sync-books') ?>', key: 'buddhaword_books', version: false },
+                videos: { url: '<?= url('/api/sync-videos') ?>', key: 'buddhaword_videos', version: false },
+                calendar: { url: '<?= url('/api/sync-calendar') ?>', key: 'buddhaword_calendar', version: false },
+            };
+        },
+
+        async requestSyncEndpoints(endpoints) {
+            const signal = (ms) => {
+                const c = new AbortController();
+                setTimeout(() => c.abort(), ms);
+                return c.signal;
+            };
+            const results = {};
+            await Promise.all(Object.keys(endpoints).map(name => {
+                const cfg = endpoints[name];
+                return fetchDedup(cfg.url, { signal: signal(120000) })
+                    .then(r => r.ok ? r.json() : { success: false })
+                    .then(res => {
+                        if (!res.success) return;
+                        results[name] = res;
+                        if (res.data) {
+                            localStorage.setItem(cfg.key, JSON.stringify(res.data));
+                        }
+                        if (cfg.version && res.version) {
+                            localStorage.setItem('buddhaword_version', res.version.toString());
+                            this.cachedVersion = res.version;
+                            this.hasUpdate = false;
+                        }
+                    })
+                    .catch(() => {});
+            }));
+            return results;
+        },
+
+        async syncPageData() {
+            const names = this.pageDatasets();
+            if (names.length === 0) return;
+            this.isSyncing = true;
+            try {
+                const all = this.syncEndpoints();
+                const endpoints = {};
+                names.forEach(n => { endpoints[n] = all[n]; });
+                const results = await this.requestSyncEndpoints(endpoints);
+                const ok = names.some(n => results[n] && results[n].success);
+                if (navigator.serviceWorker.controller) {
+                    names.forEach(n => {
+                        if (results[n] && results[n].success) {
+                            navigator.serviceWorker.controller.postMessage({
+                                type: 'CACHE_API_DATA',
+                                payload: { url: all[n].url, data: results[n] }
+                            });
+                        }
+                    });
+                }
+                if (ok) window.dispatchEvent(new CustomEvent('sync-complete'));
+            } catch (e) {
+                console.error('Page data sync failed', e);
+            } finally {
+                this.isSyncing = false;
+            }
+        },
+
         saveSearchState() {
             const q = this.searchQuery.trim();
             if (q.length >= 2) {
@@ -798,11 +873,11 @@
             this.checkForUpdates();
             this.restoreSearchState();
             this.$watch('searchQuery', (value) => this.saveSearchState());
-            /* Auto-sync when online — always fetch latest from Google Sheets (30s server debounce) */
+            /* Auto-sync when online — only fetch the API(s) needed by the current page */
             if (navigator.onLine) {
-                this.syncData(true);
+                this.syncPageData();
             }
-        }
+        },
     }">
         <div id="navbarWrapper" class="fixed top-0 left-0 right-0 z-50 transition-transform duration-300">
             <nav class="bg-[#795548] text-white px-4 py-2 flex items-center justify-between shadow-md h-[50px] md:h-[60px]">

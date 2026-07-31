@@ -86,7 +86,7 @@
             }
         }
         if (!this.events || this.events.length === 0) {
-            fetch('<?= url('/api/sync-calendar') ?>')
+            fetchDedup('<?= url('/api/sync-calendar') ?>')
                 .then(r => r.ok ? r.json() : Promise.reject())
                 .then(res => {
                     if (res.success && res.data) {

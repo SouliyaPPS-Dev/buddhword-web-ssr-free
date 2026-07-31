@@ -27,17 +27,19 @@ document.addEventListener('alpine:init', function() {
                 this.isLoading = false;
                 window.dispatchEvent(new CustomEvent('app-data-ready'));
 
-                fetch('<?= url('/api/sync-sutras') ?>')
-                    .then(r => r.ok ? r.json() : Promise.reject())
-                    .then(res => {
-                        if (res.success && res.data) {
-                            localStorage.setItem('buddhaword_sutras', JSON.stringify(res.data));
-                            this.allSutras = res.data;
-                            if (!Array.isArray(this.allSutras)) this.allSutras = Object.values(this.allSutras);
-                            this.rebuildCategories();
-                        }
-                    })
-                    .catch(function() {});
+                if (!cached) {
+                    fetchDedup('<?= url('/api/sync-sutras') ?>')
+                        .then(r => r.ok ? r.json() : Promise.reject())
+                        .then(res => {
+                            if (res.success && res.data) {
+                                localStorage.setItem('buddhaword_sutras', JSON.stringify(res.data));
+                                this.allSutras = res.data;
+                                if (!Array.isArray(this.allSutras)) this.allSutras = Object.values(this.allSutras);
+                                this.rebuildCategories();
+                            }
+                        })
+                        .catch(function() {});
+                }
 
                 window.addEventListener('scroll', function() {
                     var navbar = document.getElementById('navbarWrapper');

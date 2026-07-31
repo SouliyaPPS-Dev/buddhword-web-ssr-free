@@ -58,7 +58,7 @@ sort($dharmaCategories);
     },
     async fetchAllVideos() {
         try {
-            const res = await fetch('<?= url('/api/sync-videos') ?>');
+            const res = await fetchDedup('<?= url('/api/sync-videos') ?>');
             const data = await res.json();
             if (data.success && data.data) {
                 this.allVideos = data.data;
@@ -91,7 +91,9 @@ sort($dharmaCategories);
                 try { this.allVideos = JSON.parse(dataEl.textContent); } catch (e) { console.error('Failed to parse videos data', e); }
             }
         }
-        this.fetchAllVideos();
+        if (!this.allVideos || this.allVideos.length === 0) {
+            this.fetchAllVideos();
+        }
         window.dispatchEvent(new CustomEvent('app-data-ready'));
 
         window.addEventListener('scroll', () => {
@@ -100,7 +102,8 @@ sort($dharmaCategories);
         }, { passive: true });
 
         window.addEventListener('sync-complete', () => {
-            this.fetchAllVideos();
+            const fresh = localStorage.getItem('buddhaword_videos');
+            if (fresh) { try { this.allVideos = JSON.parse(fresh); } catch (e) {} }
         });
     }
 }" class="flex flex-col items-center justify-center mb-5 page-enter">

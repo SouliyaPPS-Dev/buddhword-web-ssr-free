@@ -42,7 +42,7 @@
             }
         }
         if (!this.books || this.books.length === 0) {
-            fetch('<?= url('/api/sync-books') ?>')
+            fetchDedup('<?= url('/api/sync-books') ?>')
                 .then(r => r.ok ? r.json() : Promise.reject())
                 .then(res => {
                     if (res.success && res.data) {
