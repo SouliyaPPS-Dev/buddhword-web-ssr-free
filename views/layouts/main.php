@@ -786,6 +786,28 @@
             };
         },
 
+        async fetchPaginatedSutras(baseUrl) {
+            const signal = (ms) => {
+                const c = new AbortController();
+                setTimeout(() => c.abort(), ms);
+                return c.signal;
+            };
+            const firstRes = await fetchDedup(baseUrl + '?page=1', { signal: signal(120000) });
+            if (!firstRes.ok) return { success: false };
+            const first = await firstRes.json();
+            if (!first.success) return first;
+            let allData = first.data;
+            const totalPages = first.totalPages || 1;
+            for (let p = 2; p <= totalPages; p++) {
+                const res = await fetchDedup(baseUrl + '?page=' + p, { signal: signal(120000) });
+                if (!res.ok) break;
+                const pageData = await res.json();
+                if (!pageData.success) break;
+                allData = allData.concat(pageData.data);
+            }
+            return { success: true, data: allData, version: first.version, total: first.total };
+        },
+
         async requestSyncEndpoints(endpoints) {
             const signal = (ms) => {
                 const c = new AbortController();
@@ -821,15 +843,30 @@
             try {
                 const all = this.syncEndpoints();
                 const endpoints = {};
-                names.forEach(n => { endpoints[n] = all[n]; });
-                const results = await this.requestSyncEndpoints(endpoints);
-                const ok = names.some(n => results[n] && results[n].success);
+                const hasSutras = names.includes('sutras');
+                names.forEach(n => { if (n !== 'sutras') endpoints[n] = all[n]; });
+                let sutrasResult = null;
+                if (hasSutras) {
+                    sutrasResult = await this.fetchPaginatedSutras(all.sutras.url);
+                    if (sutrasResult.success) {
+                        localStorage.setItem(all.sutras.key, JSON.stringify(sutrasResult.data));
+                        if (sutrasResult.version) {
+                            localStorage.setItem('buddhaword_version', sutrasResult.version.toString());
+                            this.cachedVersion = sutrasResult.version;
+                            this.hasUpdate = false;
+                        }
+                    }
+                }
+                const results = Object.keys(endpoints).length > 0 ? await this.requestSyncEndpoints(endpoints) : {};
+                if (sutrasResult && sutrasResult.success) results.sutras = sutrasResult;
+                const ok = (hasSutras && sutrasResult && sutrasResult.success) || names.some(n => n !== 'sutras' && results[n] && results[n].success);
                 if (navigator.serviceWorker.controller) {
                     names.forEach(n => {
-                        if (results[n] && results[n].success) {
+                        const r = n === 'sutras' ? sutrasResult : results[n];
+                        if (r && r.success) {
                             navigator.serviceWorker.controller.postMessage({
                                 type: 'CACHE_API_DATA',
-                                payload: { url: all[n].url, data: results[n] }
+                                payload: { url: all[n].url, data: r }
                             });
                         }
                     });
