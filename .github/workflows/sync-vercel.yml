@@ -1,0 +1,43 @@
+name: Sync vercel-deploy branch
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  sync-vercel:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Pull LFS files
+        run: git lfs pull
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Create vercel-deploy branch with real images
+        run: |
+          git checkout -b vercel-deploy
+
+          # Remove LFS tracking rules for images
+          sed -i '/\*\.jpg filter=lfs/d; /\*\.png filter=lfs/d; /\*\.webp filter=lfs/d; /\*\.gif filter=lfs/d' .gitattributes
+
+          # Remove all images from index
+          git ls-files -- '*.jpg' '*.png' '*.webp' '*.gif' '*.ico' | while read f; do
+            git rm --cached --quiet "$f" 2>/dev/null || true
+          done
+
+          # Re-add images as regular files
+          find public -type f \( -name "*.jpg" -o -name "*.png" -o -name "*.webp" -o -name "*.gif" -o -name "*.ico" \) | while read f; do
+            GIT_LFS_SKIP_SMUDGE=1 git add "$f"
+          done
+
+          # Commit and push
+          git add -A
+          git diff --cached --quiet || git commit -m "vercel-deploy: sync with main (real images)"
+          git push --force origin vercel-deploy
