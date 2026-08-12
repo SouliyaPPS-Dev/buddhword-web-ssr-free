@@ -6,26 +6,22 @@ use App\Models\Book;
 use App\Models\Video;
 use App\Models\Calendar;
 
+require_once __DIR__ . '/../Helpers/cache.php';
+
 class ApiController {
     public function checkUpdate() {
         header('Content-Type: application/json');
-        $cacheFile = __DIR__ . '/../../storage/cache/sutra_api.json';
-        $version = file_exists($cacheFile) ? filemtime($cacheFile) : 0;
+        $version = getCacheVersion('sutra_api.json');
         echo json_encode(['version' => $version]);
-    }
-
-    private function shouldRefreshCache($cacheFile, $debounce = 30) {
-        return !file_exists($cacheFile) || (time() - filemtime($cacheFile) >= $debounce);
     }
 
     public function syncSutras() {
         header('Content-Type: application/json');
         try {
             set_time_limit(60);
-            $cacheFile = __DIR__ . '/../../storage/cache/sutra_api.json';
-            $refresh = $this->shouldRefreshCache($cacheFile, 30);
+            $refresh = shouldRefreshCache('sutra_api.json', 30);
             $sutras = Sutra::getAll($refresh);
-            $version = file_exists($cacheFile) ? filemtime($cacheFile) : time();
+            $version = getCacheVersion('sutra_api.json');
             echo json_encode(['success' => true, 'data' => $sutras, 'version' => $version], JSON_UNESCAPED_UNICODE);
         } catch (\Exception $e) {
             http_response_code(500);
@@ -37,8 +33,7 @@ class ApiController {
         header('Content-Type: application/json');
         try {
             set_time_limit(30);
-            $cacheFile = __DIR__ . '/../../storage/cache/book_api.json';
-            $refresh = $this->shouldRefreshCache($cacheFile, 30);
+            $refresh = shouldRefreshCache('book_api.json', 30);
             $books = Book::getAll($refresh);
             echo json_encode(['success' => true, 'data' => $books], JSON_UNESCAPED_UNICODE);
         } catch (\Exception $e) {
@@ -51,8 +46,7 @@ class ApiController {
         header('Content-Type: application/json');
         try {
             set_time_limit(30);
-            $cacheFile = __DIR__ . '/../../storage/cache/video_api.json';
-            $refresh = $this->shouldRefreshCache($cacheFile, 30);
+            $refresh = shouldRefreshCache('video_api.json', 30);
             $videos = Video::getAll($refresh);
             echo json_encode(['success' => true, 'data' => $videos], JSON_UNESCAPED_UNICODE);
         } catch (\Exception $e) {
@@ -65,8 +59,7 @@ class ApiController {
         header('Content-Type: application/json');
         try {
             set_time_limit(30);
-            $cacheFile = __DIR__ . '/../../storage/cache/calendar_api.json';
-            $refresh = $this->shouldRefreshCache($cacheFile, 30);
+            $refresh = shouldRefreshCache('calendar_api.json', 30);
             $events = Calendar::getAll($refresh);
             echo json_encode(['success' => true, 'data' => $events], JSON_UNESCAPED_UNICODE);
         } catch (\Exception $e) {

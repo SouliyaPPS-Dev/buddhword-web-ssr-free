@@ -1,6 +1,8 @@
 <?php
 namespace App\Models;
 
+require_once __DIR__ . '/../Helpers/cache.php';
+
 class Sutra {
     public static function getAll($refresh = false) {
         $sutraData = self::fetchSutraApi($refresh);
@@ -10,41 +12,56 @@ class Sutra {
     }
 
     private static function fetchSutraApi($refresh = false) {
-        $cacheFile = __DIR__ . '/../../storage/cache/sutra_api.json';
+        $cacheFile = 'sutra_api.json';
         $cacheTime = 86400; // 24 hours
 
-        if (!$refresh && file_exists($cacheFile) && (time() - filemtime($cacheFile) < $cacheTime)) {
-            $json = file_get_contents($cacheFile);
-        } else {
-            $url = $_ENV['SUTRA_API_URL'] ?? getenv('SUTRA_API_URL') ?: null;
-            if (!$url) {
-                if (file_exists($cacheFile)) {
-                    $json = file_get_contents($cacheFile);
-                } else {
-                    return [];
-                }
-            } else {
-                $json = httpGet($url);
-                if ($json !== null) {
-                    if (!is_dir(dirname($cacheFile))) mkdir(dirname($cacheFile), 0777, true);
-                    file_put_contents($cacheFile, $json);
-                } elseif (file_exists($cacheFile)) {
-                    $json = file_get_contents($cacheFile);
-                } elseif ($refresh) {
-                    throw new \Exception("ບໍ່ສາມາດເຊື່ອມຕໍ່ກັບ API ໄດ້");
-                } else {
-                    return [];
+        if (!$refresh) {
+            $json = readCache($cacheFile, $cacheTime);
+            if ($json !== null) {
+                $data = json_decode($json, true);
+                if (isset($data['values']) && !empty($data['values'])) {
+                    return self::transformData($data);
                 }
             }
         }
 
-        $data = json_decode($json, true);
-
-        if (!isset($data['values']) || empty($data['values'])) {
-            if ($refresh) throw new \Exception("ບໍ່ມີຂໍ້ມູນຈາກ API");
+        $url = $_ENV['SUTRA_API_URL'] ?? getenv('SUTRA_API_URL') ?: null;
+        if (!$url) {
+            $json = readCache($cacheFile, $cacheTime * 365);
+            if ($json !== null) {
+                $data = json_decode($json, true);
+                if (isset($data['values']) && !empty($data['values'])) {
+                    return self::transformData($data);
+                }
+            }
             return [];
         }
 
+        $json = httpGet($url);
+        if ($json !== null) {
+            writeCache($cacheFile, $json);
+            $data = json_decode($json, true);
+            if (isset($data['values']) && !empty($data['values'])) {
+                return self::transformData($data);
+            }
+        }
+
+        $json = readCache($cacheFile, $cacheTime * 365);
+        if ($json !== null) {
+            $data = json_decode($json, true);
+            if (isset($data['values']) && !empty($data['values'])) {
+                return self::transformData($data);
+            }
+        }
+
+        if ($refresh) {
+            throw new \Exception("ບໍ່ສາມາດເຊື່ອມຕໍ່ກັບ API ໄດ້");
+        }
+
+        return [];
+    }
+
+    private static function transformData($data) {
         $headers = array_shift($data['values']);
         $rows = $data['values'];
 
@@ -58,7 +75,6 @@ class Sutra {
                 $rowObject['ສຽງ'] = "";
             }
             
-            // Filter out empty rows
             if (!empty(array_filter($rowObject))) {
                 $transformed[] = $rowObject;
             }
@@ -105,4 +121,3 @@ class Sutra {
         return $transformed;
     }
 }
- 

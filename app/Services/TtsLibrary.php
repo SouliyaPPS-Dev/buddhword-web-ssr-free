@@ -11,7 +11,9 @@ class TtsLibrary {
     ];
 
     public function __construct() {
-        $this->storageDir = __DIR__ . '/../../storage/tts';
+        // Use cache helper for cross-environment support
+        require_once __DIR__ . '/../Helpers/cache.php';
+        $this->storageDir = getCacheDir() . '/tts';
         if (!is_dir($this->storageDir)) {
             @mkdir($this->storageDir, 0755, true);
         }

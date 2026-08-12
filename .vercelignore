@@ -8,10 +8,20 @@ composer.phar
 php.ini
 .user.ini
 storage/tts
+storage/tmp
+storage/cache
 scripts
 *.md
 node_modules
 tailwind.config.js
+Dockerfile
+docker-compose*.yml
+fly.toml
+entrypoint.sh
+.dockerignore
+databases
+*.sqlite
+*.sqlite.gz
 
 # Prevent Vercel from serving these Apache/PHP/redirect files as static downloads
 public/index.php

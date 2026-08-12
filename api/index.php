@@ -38,6 +38,7 @@ spl_autoload_register(function ($class) {
 
 require_once __DIR__ . '/../app/Helpers/view.php';
 require_once __DIR__ . '/../app/Helpers/http.php';
+require_once __DIR__ . '/../app/Helpers/cache.php';
 
 header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: DENY');

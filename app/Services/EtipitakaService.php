@@ -48,7 +48,10 @@ class EtipitakaService {
         self::init();
         $gzPath = self::$dbDir . $code . '.sqlite.gz';
         if (!file_exists($gzPath)) return null;
-        $cacheDir = __DIR__ . '/../../storage/cache/sqlite/';
+        
+        // Use cache helper for cross-environment support
+        require_once __DIR__ . '/../Helpers/cache.php';
+        $cacheDir = getCacheDir() . '/sqlite/';
         if (!is_dir($cacheDir)) {
             @mkdir($cacheDir, 0755, true);
             if (!is_dir($cacheDir)) {

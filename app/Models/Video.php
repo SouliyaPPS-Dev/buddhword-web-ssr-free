@@ -1,37 +1,56 @@
 <?php
 namespace App\Models;
 
+require_once __DIR__ . '/../Helpers/cache.php';
+
 class Video {
     public static function getAll($refresh = false) {
-        $cacheFile = __DIR__ . '/../../storage/cache/video_api.json';
+        $cacheFile = 'video_api.json';
         $cacheTime = 86400; // 24 hours
 
-        if (!$refresh && file_exists($cacheFile) && (time() - filemtime($cacheFile) < $cacheTime)) {
-            $json = file_get_contents($cacheFile);
-        } else {
-            $url = $_ENV['VIDEO_API_URL'] ?? getenv('VIDEO_API_URL') ?: '';
-            if (!$url) {
-                if (file_exists($cacheFile)) {
-                    $json = file_get_contents($cacheFile);
-                } else {
-                    return [];
-                }
-            } else {
-                $json = httpGet($url);
-                if ($json !== null) {
-                    if (!is_dir(dirname($cacheFile))) mkdir(dirname($cacheFile), 0777, true);
-                    file_put_contents($cacheFile, $json);
-                } elseif (file_exists($cacheFile)) {
-                    $json = file_get_contents($cacheFile);
-                } else {
-                    return [];
+        if (!$refresh) {
+            $json = readCache($cacheFile, $cacheTime);
+            if ($json !== null) {
+                $data = json_decode($json, true);
+                if (isset($data['values'])) {
+                    return self::transformData($data);
                 }
             }
         }
 
-        $data = json_decode($json, true);
-        if (!isset($data['values'])) return [];
+        $url = $_ENV['VIDEO_API_URL'] ?? getenv('VIDEO_API_URL') ?: '';
+        if (!$url) {
+            $json = readCache($cacheFile, $cacheTime * 365);
+            if ($json !== null) {
+                $data = json_decode($json, true);
+                if (isset($data['values'])) {
+                    return self::transformData($data);
+                }
+            }
+            return [];
+        }
 
+        $json = httpGet($url);
+        if ($json !== null) {
+            writeCache($cacheFile, $json);
+            $data = json_decode($json, true);
+            if (isset($data['values'])) {
+                return self::transformData($data);
+            }
+        }
+
+        $json = readCache($cacheFile, $cacheTime * 365);
+        if ($json !== null) {
+            $data = json_decode($json, true);
+            if (isset($data['values'])) {
+                return self::transformData($data);
+            }
+        }
+
+        return [];
+    }
+
+    private static function transformData($data) {
         $headers = array_shift($data['values']);
         $rows = $data['values'];
 

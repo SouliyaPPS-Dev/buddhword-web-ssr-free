@@ -79,7 +79,10 @@ class TtsService {
 
     private function saveAudioToFile($text, $languageCode, $audioContent, $timepoints = []) {
         $hash = md5($text . '|' . $languageCode);
-        $dir = __DIR__ . '/../../storage/tts';
+        
+        // Use cache helper for cross-environment support
+        require_once __DIR__ . '/../Helpers/cache.php';
+        $dir = getCacheDir() . '/tts';
         if (!is_dir($dir)) @mkdir($dir, 0755, true);
 
         $mp3File = $dir . '/' . $hash . '.mp3';
@@ -111,7 +114,10 @@ class TtsService {
 
     private function synthesizeFromFile($text, $languageCode) {
         $hash = md5($text . '|' . $languageCode);
-        $dir = __DIR__ . '/../../storage/tts';
+        
+        // Use cache helper for cross-environment support
+        require_once __DIR__ . '/../Helpers/cache.php';
+        $dir = getCacheDir() . '/tts';
         $mp3File = $dir . '/' . $hash . '.mp3';
         $metaFile = $dir . '/' . $hash . '.json';
 
