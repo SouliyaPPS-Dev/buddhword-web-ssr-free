@@ -674,13 +674,12 @@
             }
 
             try {
+                const sutrasRes = await this.fetchPaginatedSutras('<?= url('/api/sync-sutras') ?>');
                 const results = await this.requestSyncEndpoints({
-                    sutras: { url: '<?= url('/api/sync-sutras') ?>', key: 'buddhaword_sutras', version: true },
                     books: { url: '<?= url('/api/sync-books') ?>', key: 'buddhaword_books', version: false },
                     videos: { url: '<?= url('/api/sync-videos') ?>', key: 'buddhaword_videos', version: false },
                     calendar: { url: '<?= url('/api/sync-calendar') ?>', key: 'buddhaword_calendar', version: false },
                 });
-                const sutrasRes = results.sutras || { success: false };
                 const booksRes = results.books || { success: false };
                 const videosRes = results.videos || { success: false };
                 const calendarRes = results.calendar || { success: false };

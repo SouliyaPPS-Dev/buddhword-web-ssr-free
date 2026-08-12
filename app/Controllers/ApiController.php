@@ -22,7 +22,32 @@ class ApiController {
             $refresh = shouldRefreshCache('sutra_api.json', 30);
             $sutras = Sutra::getAll($refresh);
             $version = getCacheVersion('sutra_api.json');
-            echo json_encode(['success' => true, 'data' => $sutras, 'version' => $version], JSON_UNESCAPED_UNICODE);
+
+            $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : null;
+            $perPage = 150;
+            $total = count($sutras);
+            $totalPages = (int)ceil($total / $perPage);
+
+            if ($page !== null) {
+                $start = ($page - 1) * $perPage;
+                $pageData = array_slice($sutras, $start, $perPage);
+                echo json_encode([
+                    'success' => true,
+                    'data' => $pageData,
+                    'version' => $version,
+                    'page' => $page,
+                    'totalPages' => $totalPages,
+                    'total' => $total,
+                ], JSON_UNESCAPED_UNICODE);
+            } else {
+                echo json_encode([
+                    'success' => true,
+                    'data' => $sutras,
+                    'version' => $version,
+                    'totalPages' => $totalPages,
+                    'total' => $total,
+                ], JSON_UNESCAPED_UNICODE);
+            }
         } catch (\Exception $e) {
             http_response_code(500);
             echo json_encode(['success' => false, 'message' => $e->getMessage()], JSON_UNESCAPED_UNICODE);
