@@ -934,23 +934,36 @@
                 await this.unsubscribePush();
                 return;
             }
-            const result = await Swal.fire({
-                title: 'ເປີດການແຈ້ງເຕືອນ?',
-                text: 'ທ່ານຕ້ອງການຮັບຂໍ້ຄວາມແຈ້ງເຕືອນຈາກ ຄຳສອນພຸດທະ ບໍ່? ສາມາດປິດໄດ້ທຸກເວລາ.',
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#795548',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'ຕົກລົງ',
-                cancelButtonText: 'ຍົກເລີກ'
-            });
-            if (!result.isConfirmed) return;
 
-            const perm = await Notification.requestPermission();
-            if (perm !== 'granted') {
-                Swal.fire('ບໍ່ໄດ້ອະນຸຍາດ', 'ກະລຸນາອະນຸຍາດການແຈ້ງເຕືອນໃນການຕັ້ງຄ່າບຣາວເຊີ', 'warning');
+            // IMPORTANT: Notification.requestPermission() must run synchronously inside
+            // the user gesture (the click). Awaiting a dialog first consumes the
+            // transient activation, so Chrome/Safari silently return 'denied' without
+            // showing the native prompt. Request it directly here.
+            let perm = 'denied';
+            try {
+                perm = await Notification.requestPermission();
+            } catch (e) {
+                // Older Safari may reject the promise form.
+                perm = Notification.permission;
+            }
+
+            if (perm === 'granted') {
+                await this.enablePushSubscription();
                 return;
             }
+
+            // perm === 'denied' (or 'default' = prompt dismissed) — cannot auto-subscribe.
+            Swal.fire({
+                title: perm === 'denied' ? 'ບໍ່ສາມາດເປີດການແຈ້ງເຕືອນໄດ້' : 'ຍັງບໍ່ໄດ້ອະນຸຍາດ',
+                text: perm === 'denied'
+                    ? 'ບຣາວເຊີໄດ້ປິດການອະນຸຍາດ. ກະລຸນາເປີດໃນການຕັ້ງຄ່າບຣາວເຊີ (Chrome/Safari ແລ້ວໆກົດປຸ່ມລູກລັອກ ຫຼື ການຕັ້ງຄ່າເວັບໄຊ, ແລ້ວອະນຸຍາດໃຫ້ "Notifications").'
+                    : 'ກະລຸນາກົດອະນຸຍາດໃນກະດານທີ່ບຣາວເຊີສະແດງຂຶ້ນເພື່ອຮັບການແຈ້ງເຕືອນ. ຖ້າບໍ່ເຫັນກະດານ, ກົດປຸ່ມລູກລັອກແຖບທີ່ຢູ່ ແລ້ວອະນຸຍາດ "Notifications".',
+                icon: 'warning',
+                confirmButtonColor: '#795548',
+                confirmButtonText: 'ຕົກລົງ'
+            });
+        },
+        async enablePushSubscription() {
             try {
                 const reg = await navigator.serviceWorker.ready;
                 const key = await this.fetchVapidKey();
