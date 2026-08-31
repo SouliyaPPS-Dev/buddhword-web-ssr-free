@@ -100,6 +100,7 @@ class PushController
         if (!$result['success']) {
             $this->json(['success' => false, 'error' => $result['error'] ?? 'Save failed'], 500);
         }
+        $this->autoSyncBucket();
         $this->json(['success' => true, 'notification' => $result['notification']]);
     }
 
@@ -119,6 +120,7 @@ class PushController
         if (!$result['success']) {
             $this->json(['success' => false, 'error' => $result['error'] ?? 'Delete failed'], 404);
         }
+        $this->autoSyncBucket();
         $this->json(['success' => true]);
     }
 
@@ -255,5 +257,13 @@ class PushController
     {
         $bucket = getenv('HF_BUCKET') ?: ($_ENV['HF_BUCKET'] ?? '');
         return $bucket !== '';
+    }
+
+    private function autoSyncBucket()
+    {
+        if (!$this->bucketConfigured()) return;
+        try {
+            $this->model()->syncToBucket();
+        } catch (\Throwable $e) {}
     }
 }
