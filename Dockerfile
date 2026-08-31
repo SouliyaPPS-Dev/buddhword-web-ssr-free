@@ -2,9 +2,11 @@ FROM php:8.3-apache
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git unzip curl libpng-dev libjpeg-dev libfreetype6-dev libonig-dev libzip-dev libcurl4-openssl-dev libicu-dev poppler-utils \
+    python3 python3-pip \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) \
         pdo_mysql mbstring curl gd intl zip exif sockets \
+    && pip install --break-system-packages -U "huggingface_hub[cli]" \
     && rm -rf /var/lib/apt/lists/*
 
 RUN a2enmod rewrite
