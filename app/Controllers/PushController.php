@@ -240,8 +240,8 @@ class PushController
      */
     public function pullBucket()
     {
-        $ok = $this->model()->pullFromBucket();
-        $this->json(['success' => $ok, 'synced' => $ok]);
+        $result = $this->model()->pullFromBucket();
+        $this->json($result);
     }
 
     private function bucketConfigured()

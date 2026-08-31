@@ -217,7 +217,9 @@ class PushData
         $dataDir = $this->dataDir();
         $canWrite = $this->canWriteToBucket();
 
-        if (!$bucket || !$canWrite) return false;
+        if (!$bucket || !$canWrite) {
+            return ['success' => false, 'reason' => 'bucket_not_configured'];
+        }
 
         $target = "$path/notifications.json";
         $local = "$dataDir/notifications.json";
@@ -226,7 +228,13 @@ class PushData
         $code = 0;
         exec($cmd, $out, $code);
 
-        return $code === 0 && file_exists($local);
+        return [
+            'success' => $code === 0 && file_exists($local),
+            'output' => implode("\n", $out),
+            'exit' => $code,
+            'bucket' => "$bucket/$target",
+            'local' => $local,
+        ];
     }
 
     private function canWriteToBucket()
