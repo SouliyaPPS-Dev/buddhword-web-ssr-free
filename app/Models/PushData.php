@@ -21,6 +21,21 @@ class PushData
         return $dir;
     }
 
+    /**
+     * Build a writable HF home and wrap a command so the hf/xet CLI can cache
+     * its logs/data there. Apache runs as www-data (not root), so the default
+     * /root/.cache/huggingface is not writable and hf cp fails with
+     * "Permission denied (os error 13)".
+     */
+    private function hfCommand($args)
+    {
+        $home = getenv('HF_HOME') ?: ($_ENV['HF_HOME'] ?? ($this->dataDir() . '/.hfhome'));
+        @mkdir($home, 0777, true);
+        return 'HF_HOME=' . escapeshellarg($home)
+            . ' HF_TOKEN=' . escapeshellarg(getenv('HF_TOKEN') ?: ($_ENV['HF_TOKEN'] ?? ''))
+            . ' hf ' . $args . ' 2>&1';
+    }
+
     private function notificationsPath()
     {
         return $this->dataDir() . '/notifications.json';
@@ -186,7 +201,7 @@ class PushData
         foreach ($uploads as $file => $target) {
             $src = "$dataDir/$file";
             if (!file_exists($src)) continue;
-            $cmd = 'hf cp ' . escapeshellarg($src) . ' hf://buckets/' . $bucket . '/' . escapeshellarg($target) . ' 2>&1';
+            $cmd = $this->hfCommand('cp ' . escapeshellarg($src) . ' hf://buckets/' . $bucket . '/' . escapeshellarg($target));
             $out = [];
             $code = 0;
             exec($cmd, $out, $code);
@@ -223,7 +238,7 @@ class PushData
 
         $target = "$path/notifications.json";
         $local = "$dataDir/notifications.json";
-        $cmd = 'hf cp hf://buckets/' . $bucket . '/' . escapeshellarg($target) . ' ' . escapeshellarg($local) . ' 2>&1';
+        $cmd = $this->hfCommand('cp hf://buckets/' . $bucket . '/' . escapeshellarg($target) . ' ' . escapeshellarg($local));
         $out = [];
         $code = 0;
         exec($cmd, $out, $code);
