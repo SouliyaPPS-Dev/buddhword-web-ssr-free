@@ -327,6 +327,9 @@ function pushApp() {
         },
 
         urlBase64ToUint8Array(base64String) {
+            if (!base64String || typeof base64String !== 'string') {
+                throw new Error('ບໍ່ພົບຄີ VAPID ສາທາລະນະ (VAPID_PUBLIC_KEY) ກະລຸນາຕັ້ງຄ່າໃຫ້ຖືກຕ້ອງ');
+            }
             const padding = '='.repeat((4 - base64String.length % 4) % 4);
             const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
             const rawData = window.atob(base64);
