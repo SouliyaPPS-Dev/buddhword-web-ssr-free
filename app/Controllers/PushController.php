@@ -107,11 +107,15 @@ class PushController
     {
         $input = json_decode(file_get_contents('php://input'), true);
         $id = $input['id'] ?? ($_POST['id'] ?? '');
-        if (!$id) {
-            $this->json(['success' => false, 'error' => 'Missing id'], 400);
+
+        if ($id) {
+            $result = $this->model()->destroyNotification($id);
+        } else {
+            // Fallback: match by title when ID is empty (stale bucket data)
+            $title = $input['title'] ?? '';
+            $result = $this->model()->destroyNotificationByTitle($title);
         }
 
-        $result = $this->model()->destroyNotification($id);
         if (!$result['success']) {
             $this->json(['success' => false, 'error' => $result['error'] ?? 'Delete failed'], 404);
         }

@@ -128,6 +128,22 @@ class PushData
         return ['success' => true];
     }
 
+    public function destroyNotificationByTitle($title)
+    {
+        if (!$title) return ['success' => false, 'error' => 'Missing title'];
+        $notifications = $this->notifications();
+        $filtered = array_values(array_filter($notifications, function ($n) use ($title) {
+            return ($n['title'] ?? '') !== $title;
+        }));
+
+        if (count($filtered) === count($notifications)) {
+            return ['success' => false, 'error' => 'Notification not found'];
+        }
+
+        $this->saveNotifications($filtered);
+        return ['success' => true];
+    }
+
     /* --------------------- subscriptions --------------------- */
 
     public function subscriptions()

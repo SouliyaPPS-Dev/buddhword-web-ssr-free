@@ -264,7 +264,7 @@ function pushApp() {
             fetch('<?= url('/api/notify/destroy') ?>', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: n.id })
+                body: JSON.stringify({ id: n.id, title: n.title || '' })
             })
             .then(r => r.json())
             .then(data => {
