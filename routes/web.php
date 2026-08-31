@@ -56,4 +56,16 @@ return [
     '/uttayarndham/read' => 'UttayarndhamController@read',
     '/api/uttayarndham/list' => 'UttayarndhamController@apiList',
     '/api/uttayarndham/content' => 'UttayarndhamController@apiContent',
+
+    // Push notification management (admin CRUD + API)
+    '/notify' => 'PushController@index',
+    '/api/notify/list' => 'PushController@apiList',
+    '/api/notify/pubkey' => 'PushController@pubkey',
+    '/api/notify/store' => 'PushController@store',
+    '/api/notify/destroy' => 'PushController@destroy',
+    '/api/notify/send' => 'PushController@send',
+    '/api/notify/sync-bucket' => 'PushController@syncBucket',
+    '/api/notify/pull-bucket' => 'PushController@pullBucket',
+    '/api/notify/subscribe' => 'PushController@subscribe',
+    '/api/notify/unsubscribe' => 'PushController@unsubscribe',
 ];

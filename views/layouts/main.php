@@ -556,6 +556,8 @@
         cachedVersion: 0,
         isOnline: navigator.onLine,
         searchController: null,
+        notificationsSupported: ('serviceWorker' in navigator) && ('PushManager' in window),
+        notificationsEnabled: false,
         get resultTypes() {
             return Object.keys(this.searchCounts).sort();
         },
@@ -913,6 +915,100 @@
             if (navigator.onLine) {
                 this.syncPageData();
             }
+            this.initNotifications();
+        },
+        async initNotifications() {
+            if (!this.notificationsSupported) return;
+            try {
+                const reg = await navigator.serviceWorker.ready;
+                const sub = await reg.pushManager.getSubscription();
+                this.notificationsEnabled = !!sub;
+            } catch (e) {}
+        },
+        async toggleNotifications() {
+            if (!this.notificationsSupported) {
+                Swal.fire('ບໍ່ຮອງຮັບ', 'ບຣາວເຊີ/ອຸປະກອນນີ້ບໍ່ຮອງຮັບການແຈ້ງເຕືອນ', 'warning');
+                return;
+            }
+            if (this.notificationsEnabled) {
+                await this.unsubscribePush();
+                return;
+            }
+            const result = await Swal.fire({
+                title: 'ເປີດການແຈ້ງເຕືອນ?',
+                text: 'ທ່ານຕ້ອງການຮັບຂໍ້ຄວາມແຈ້ງເຕືອນຈາກ ຄຳສອນພຸດທະ ບໍ່? ສາມາດປິດໄດ້ທຸກເວລາ.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#795548',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'ຕົກລົງ',
+                cancelButtonText: 'ຍົກເລີກ'
+            });
+            if (!result.isConfirmed) return;
+
+            const perm = await Notification.requestPermission();
+            if (perm !== 'granted') {
+                Swal.fire('ບໍ່ໄດ້ອະນຸຍາດ', 'ກະລຸນາອະນຸຍາດການແຈ້ງເຕືອນໃນການຕັ້ງຄ່າບຣາວເຊີ', 'warning');
+                return;
+            }
+            try {
+                const reg = await navigator.serviceWorker.ready;
+                const key = await this.fetchVapidKey();
+                if (!key) {
+                    Swal.fire('ຍັງບໍ່ກຽມພ້ອມ', 'ການແຈ້ງເຕືອນຍັງບໍ່ຖືກຕັ້ງຄ່າຢູ່ເຊີເວີ', 'info');
+                    return;
+                }
+                const sub = await reg.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: this.urlBase64ToUint8Array(key)
+                });
+                const saveRes = await fetch('<?= url('/api/notify/subscribe') ?>', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(sub)
+                });
+                if (saveRes.ok) {
+                    this.notificationsEnabled = true;
+                    Swal.fire('ສຳເລັດ', 'ການແຈ້ງເຕືອນຖືກເປີດແລ້ວ', 'success');
+                }
+            } catch (e) {
+                Swal.fire('ຜິດພາດ', e.message, 'error');
+            }
+        },
+        async fetchVapidKey() {
+            try {
+                const res = await fetch('<?= url('/api/notify/pubkey') ?>', { cache: 'no-store' });
+                const data = await res.json();
+                return data.publicKey || '';
+            } catch (e) {
+                return '';
+            }
+        },
+        async unsubscribePush() {
+            try {
+                const reg = await navigator.serviceWorker.ready;
+                const sub = await reg.pushManager.getSubscription();
+                if (sub) {
+                    await fetch('<?= url('/api/notify/unsubscribe') ?>', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ endpoint: sub.endpoint })
+                    });
+                    await sub.unsubscribe();
+                }
+                this.notificationsEnabled = false;
+                Swal.fire('ສຳເລັດ', 'ການແຈ້ງເຕືອນຖືກປິດແລ້ວ', 'success');
+            } catch (e) {
+                console.error('Unsubscribe failed', e);
+            }
+        },
+        urlBase64ToUint8Array(base64String) {
+            const padding = '='.repeat((4 - base64String.length % 4) % 4);
+            const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+            const rawData = window.atob(base64);
+            const outputArray = new Uint8Array(rawData.length);
+            for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+            return outputArray;
         },
     }">
         <div id="navbarWrapper" class="fixed top-0 left-0 right-0 z-50 transition-transform duration-300">
@@ -935,6 +1031,14 @@
                 </a>
             </div>
             <div class="flex items-center gap-1 md:gap-3">
+                <button @click="toggleNotifications()" :title="notificationsEnabled ? 'ປິດການແຈ້ງເຕືອນ' : 'ເປີດການແຈ້ງເຕືອນ'" aria-label="Notifications">
+                    <span class="relative inline-flex p-2 rounded-full transition-colors" :class="notificationsEnabled ? 'bg-[#4CAF50]/30' : 'text-white hover:bg-white/10'">
+                        <svg class="h-5 w-5 md:h-6 md:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                        </svg>
+                        <span x-show="!notificationsSupported" x-cloak class="absolute -top-0.5 -right-0.5 w-2 h-2 bg-gray-400 border border-white rounded-full"></span>
+                    </span>
+                </button>
                 <button @click="syncData()" class="text-white p-2 hover:bg-white/10 rounded-full transition-colors relative" title="ອັບເດດຂໍ້ມູນ" aria-label="Sync data">
                     <div x-show="hasUpdate"
                          class="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 border-2 border-white rounded-full flex items-center justify-center z-10">

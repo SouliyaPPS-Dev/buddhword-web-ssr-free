@@ -115,6 +115,49 @@ var PRECACHE_STATIC = [
   "/js/offline.js",
 ];
 
+function resolveUrl(pathOrUrl) {
+  if (!pathOrUrl) return self.location.origin + p("/");
+  if (/^https?:\/\//i.test(pathOrUrl)) return pathOrUrl;
+  return self.location.origin + p(pathOrUrl);
+}
+
+self.addEventListener("push", function (event) {
+  var data = {};
+  try {
+    if (event.data) data = event.data.json();
+  } catch (e) {
+    data = { title: (event.data && event.data.text()) || "ການແຈ້ງເຕືອນ", body: "" };
+  }
+  var title = data.title || "ຄຳສອນພຸດທະ";
+  var options = {
+    body: data.body || "",
+    icon: p("/buddhaword.png"),
+    badge: p("/icons/Icon-192.png"),
+    data: { url: data.url || p("/") },
+    vibrate: [100, 50, 100],
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener("notificationclick", function (event) {
+  event.notification.close();
+  var target = resolveUrl((event.notification.data && event.notification.data.url) || "/");
+  event.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then(function (windowClients) {
+      for (var i = 0; i < windowClients.length; i++) {
+        var client = windowClients[i];
+        if ("focus" in client) {
+          client.navigate(target);
+          return client.focus();
+        }
+      }
+      if (clients.openWindow) {
+        return clients.openWindow(target);
+      }
+    })
+  );
+});
+
 self.addEventListener("install", function (event) {
   event.waitUntil(
     caches
