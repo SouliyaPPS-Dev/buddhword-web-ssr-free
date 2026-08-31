@@ -196,6 +196,17 @@ function pushApp() {
             this.$watch('modal.show', val => {
                 document.body.style.overflow = val ? 'hidden' : '';
             });
+            this.pullFromBucket();
+        },
+
+        async pullFromBucket() {
+            if (!this.config.bucketConfigured) {
+                this.refreshStatus();
+                return;
+            }
+            try {
+                await fetch('<?= url('/api/notify/pull-bucket') ?>', { method: 'POST' });
+            } catch (e) {}
             this.refreshStatus();
         },
 
