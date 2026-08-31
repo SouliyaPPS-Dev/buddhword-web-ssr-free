@@ -321,8 +321,8 @@ function pushApp() {
             return '';
         },
         async toggleNotifyUI() {
-            if (!('Notification' in window)) {
-                Swal.fire('ບໍ່ຮອງຮັບ', 'ບຣາວເຊີນີ້ບໍ່ຮອງຮັບການແຈ້ງເຕືອນ (Push Notification)', 'warning');
+            if (!('Notification' in window) || !('serviceWorker' in navigator)) {
+                Swal.fire('ບໍ່ຮອງຮັບ', 'ບຣາວເຊີ/ອຸປະກອນນີ້ບໍ່ຮອງຮັບການແຈ້ງເຕືອນ Push Notification', 'warning');
                 return;
             }
             if (this.notifyEnabled) {
@@ -353,23 +353,18 @@ function pushApp() {
                     Swal.fire('ຜິດພາດ', 'ບໍ່ສາມາດດຶງຄີ VAPID ຈາກເຊີເວີໄດ້. ກະລຸນາໂຫຼດໜ້າເວັບໃໝ່ແລ້ວລອງໃໝ່.', 'error');
                     return;
                 }
-                if (Notification.permission === 'granted') {
-                    const reg = await navigator.serviceWorker.ready;
-                    const sub = await reg.pushManager.subscribe({
-                        userVisibleOnly: true,
-                        applicationServerKey: this.urlBase64ToUint8Array(key)
-                    });
-                    await this.saveSubscription(sub);
-                    this.notifyEnabled = true;
-                    new Notification('ທົດສອບສຳເລັດ', { body: 'ການແຈ້ງເຕືອນພ້ອມໃຊ້ງານ. ທ່ານຈະໄດ້ຮັບແຈ້ງເຕືອນເມື່ອມີຂໍ້ຄວາມໃໝ່.' });
-                    return;
+                // Ensure service worker is registered and active
+                let reg = await navigator.serviceWorker.getRegistration();
+                if (!reg) {
+                    reg = await navigator.serviceWorker.register('<?= url('sw.js') ?>');
                 }
-                const perm = await Notification.requestPermission();
+                // Wait for the SW to be fully active
+                reg = await navigator.serviceWorker.ready;
+                const perm = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission();
                 if (perm !== 'granted') {
-                    Swal.fire('ບໍ່ໄດ້ອະນຸຍາດ', 'ທ່ານບໍ່ໄດ້ອະນຸຍາດການແຈ້ງເຕືອນ. ກະລຸນາລອງໃໝ່ໃນພາຍຫຼັງ.', 'warning');
+                    Swal.fire('ບໍ່ໄດ້ອະນຸຍາດ', 'ກະລຸນາອະນຸຍາດການແຈ້ງເຕືອນເພື່ອຮັບຂໍ້ຄວາມໃໝ່', 'warning');
                     return;
                 }
-                const reg = await navigator.serviceWorker.ready;
                 const sub = await reg.pushManager.subscribe({
                     userVisibleOnly: true,
                     applicationServerKey: this.urlBase64ToUint8Array(key)

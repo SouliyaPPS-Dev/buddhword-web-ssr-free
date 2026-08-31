@@ -1007,7 +1007,12 @@
         },
         async enablePushSubscription() {
             try {
-                const reg = await navigator.serviceWorker.ready;
+                // Ensure service worker is registered
+                let reg = await navigator.serviceWorker.getRegistration();
+                if (!reg) {
+                    reg = await navigator.serviceWorker.register('<?= url('sw.js') ?>');
+                }
+                reg = await navigator.serviceWorker.ready;
                 const key = await this.fetchVapidKey();
                 if (!key) {
                     Swal.fire('ຍັງບໍ່ກຽມພ້ອມ', 'ການແຈ້ງເຕືອນຍັງບໍ່ຖືກຕັ້ງຄ່າຢູ່ເຊີເວີ', 'info');
@@ -1027,7 +1032,7 @@
                     Swal.fire('ສຳເລັດ', 'ການແຈ້ງເຕືອນຖືກເປີດແລ້ວ', 'success');
                 }
             } catch (e) {
-                Swal.fire('ຜິດພາດ', e.message, 'error');
+                Swal.fire('ຜິດພາດ', e.message || 'ເກີດຂໍ້ຜິດພາດໃນການຕັ້ງຄ່າ', 'error');
             }
         },
         async fetchVapidKey() {
