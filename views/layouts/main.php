@@ -935,16 +935,12 @@
                 return;
             }
 
-            // IMPORTANT: Notification.requestPermission() must run synchronously inside
-            // the user gesture (the click). Awaiting a dialog first consumes the
-            // transient activation, so Chrome/Safari silently return 'denied' without
-            // showing the native prompt. Request it directly here.
+            /* Request permission synchronously inside the user gesture. */
             let perm = 'denied';
             try {
                 perm = await Notification.requestPermission();
             } catch (e) {
-                // Older Safari may reject the promise form.
-                perm = Notification.permission;
+                perm = Notification.permission; /* older Safari rejects promise form */
             }
 
             if (perm === 'granted') {
@@ -952,7 +948,7 @@
                 return;
             }
 
-            // perm === 'denied' (or 'default' = prompt dismissed) — cannot auto-subscribe.
+            /* perm === 'denied' or 'default' -> cannot auto-subscribe */
             Swal.fire({
                 title: perm === 'denied' ? 'ບໍ່ສາມາດເປີດການແຈ້ງເຕືອນໄດ້' : 'ຍັງບໍ່ໄດ້ອະນຸຍາດ',
                 text: perm === 'denied'
