@@ -925,9 +925,6 @@
                 this.notificationsEnabled = !!sub;
             } catch (e) {}
         },
-        /* Must be synchronous: requestPermission() is called inside the click
-           gesture before any await, otherwise the browser silently returns
-           'default' without showing the native prompt. */
         toggleNotifications() {
             if (!this.notificationsSupported) {
                 Swal.fire('ບໍ່ຮອງຮັບ', 'ບຣາວເຊີ/ອຸປະກອນນີ້ບໍ່ຮອງຮັບການແຈ້ງເຕືອນ', 'warning');
@@ -937,7 +934,14 @@
                 this.unsubscribePush();
                 return;
             }
-
+            if (Notification.permission === 'denied') {
+                this.showPermissionDeniedGuide();
+                return;
+            }
+            if (Notification.permission === 'granted') {
+                this.enablePushSubscription();
+                return;
+            }
             const finish = (perm) => {
                 if (perm === 'granted') {
                     this.enablePushSubscription();
@@ -945,7 +949,6 @@
                     this.showPermissionGuide(perm);
                 }
             };
-
             try {
                 const result = Notification.requestPermission();
                 if (result && typeof result.then === 'function') {
@@ -953,20 +956,51 @@
                 } else if (result !== undefined) {
                     finish(result);
                 } else {
-                    /* older Safari uses a callback form */
                     Notification.requestPermission(finish);
                 }
             } catch (e) {
                 finish(Notification.permission);
             }
         },
+        showPermissionDeniedGuide() {
+            const isChrome = /Chrome/i.test(navigator.userAgent) && !/Edge|OPR/i.test(navigator.userAgent);
+            const isSafari = /Safari/i.test(navigator.userAgent) && !/Chrome/i.test(navigator.userAgent);
+            let steps = '';
+            if (isChrome) {
+                steps = '<div style=&quot;text-align:left;font-size:14px;line-height:1.8&quot;>' +
+                    '<b>Chrome:</b><br>' +
+                    '1. ກົດไอຄອນ 🔒 ຂ້າງ URL bar<br>' +
+                    '2. ເລືອກ <b>Site settings</b><br>' +
+                    '3. ຊອກຫາ <b>Notifications</b> → ເລືອກ <b>Allow</b><br>' +
+                    '4. <b>Reload</b> ໜ້າເວັບ</div>';
+            } else if (isSafari) {
+                steps = '<div style=&quot;text-align:left;font-size:14px;line-height:1.8&quot;>' +
+                    '<b>Safari:</b><br>' +
+                    '1. ເປີດ <b>Safari → Preferences → Websites</b><br>' +
+                    '2. ເລືອກ <b>Notifications</b><br>' +
+                    '3. ຊອກຫາເວັບນີ້ → ເລືອກ <b>Allow</b><br>' +
+                    '4. <b>Reload</b> ໜ້າເວັບ</div>';
+            } else {
+                steps = '<div style=&quot;text-align:left;font-size:14px;line-height:1.8&quot;>' +
+                    '1. ກົດไอຄອນ 🔒 ຂ້າງ URL<br>' +
+                    '2. ເລືອກ <b>Site settings</b><br>' +
+                    '3. ຊອກຫາ <b>Notifications</b> → ເລືອກ <b>Allow</b><br>' +
+                    '4. <b>Reload</b> ໜ້າເວັບ</div>';
+            }
+            Swal.fire({
+                title: 'ກະລຸນາອະນຸຍາດແຈ້ງເຕືອນ',
+                html: '<p style=&quot;margin-bottom:12px&quot;>ບຣາວເຊີໄດ້ປິດການອະນຸຍາດແຈ້ງເຕືອນສຳລັບເວັບນີ້.</p>' + steps,
+                icon: 'warning',
+                confirmButtonColor: '#795548',
+                confirmButtonText: 'ເຂົ້າໃຈແລ້ວ'
+            });
+        },
         showPermissionGuide(perm) {
             Swal.fire({
-                title: perm === 'denied' ? 'ບໍ່ສາມາດເປີດການແຈ້ງເຕືອນໄດ້' : 'ຍັງບໍ່ໄດ້ອະນຸຍາດ',
-                text: perm === 'denied'
-                    ? 'ບຣາວເຊີໄດ້ປິດການອະນຸຍາດ. ກະລຸນາເປີດໃນການຕັ້ງຄ່າບຣາວເຊີ (Chrome/Safari ແລ້ວໆກົດປຸ່ມລູກລັອກ ຫຼື ການຕັ້ງຄ່າເວັບໄຊ, ແລ້ວອະນຸຍາດໃຫ້ &quot;Notifications&quot;).'
-                    : 'ກະລຸນາກົດອະນຸຍາດໃນກະດານທີ່ບຣາວເຊີສະແດງຂຶ້ນເພື່ອຮັບການແຈ້ງເຕືອນ. ຖ້າບໍ່ເຫັນກະດານ, ກົດປຸ່ມລູກລັອກແຖບທີ່ຢູ່ ແລ້ວອະນຸຍາດ &quot;notifications&quot;.',
-                icon: 'warning',
+                title: 'ຍັງບໍ່ໄດ້ອະນຸຍາດ',
+                html: '<p>ກະລຸນາກົດ <b>Allow</b> ໃນກະດານທີ່ບຣາວເຊີສະແດງຂຶ້ນເພື່ອຮັບການແຈ້ງເຕືອນ.</p>' +
+                    '<p style=&quot;font-size:12px;color:#666;margin-top:8px&quot;>ຖ້າບໍ່ເຫັນກະດານ, ກົດไอຄອນ 🔒 ຂ້າງ URL → Site settings → Notifications → Allow</p>',
+                icon: 'info',
                 confirmButtonColor: '#795548',
                 confirmButtonText: 'ຕົກລົງ'
             });

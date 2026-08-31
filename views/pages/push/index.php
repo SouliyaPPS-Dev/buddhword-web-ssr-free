@@ -307,6 +307,27 @@ function pushApp() {
                 this.notifyEnabled = false;
                 return;
             }
+            if (Notification.permission === 'denied') {
+                Swal.fire('ກະລຸນາອະນຸຍາດແຈ້ງເຕືອນ',
+                    'ກະລຸນາເປີດການຕັ້ງຄ່າບຣາວເຊີ → Site settings → Notifications → Allow ສຳລັບເວັບນີ້, ແລ້ວ Reload ໜ້າເວັບ.',
+                    'warning');
+                return;
+            }
+            if (Notification.permission === 'granted') {
+                try {
+                    const reg = await navigator.serviceWorker.ready;
+                    const sub = await reg.pushManager.subscribe({
+                        userVisibleOnly: true,
+                        applicationServerKey: this.urlBase64ToUint8Array(this.config.vapidPublicKey)
+                    });
+                    await this.saveSubscription(sub);
+                    this.notifyEnabled = true;
+                    new Notification('ທົດສອບສຳເລັດ', { body: 'ການແຈ້ງເຕືອນພ້ອມໃຊ້ງານ' });
+                } catch (e) {
+                    Swal.fire('ຜິດພາດ', e.message, 'error');
+                }
+                return;
+            }
             const perm = await Notification.requestPermission();
             if (perm !== 'granted') {
                 Swal.fire('ບໍ່ໄດ້ອະນຸຍາດ', 'ກະລຸນາອະນຸຍາດການແຈ້ງເຕືອນ', 'warning');
