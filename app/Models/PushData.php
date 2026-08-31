@@ -182,17 +182,28 @@ class PushData
         ];
 
         $synced = [];
+        $errors = [];
         foreach ($uploads as $file => $target) {
             $src = "$dataDir/$file";
             if (!file_exists($src)) continue;
             $cmd = 'hf cp ' . escapeshellarg($src) . ' hf://buckets/' . $bucket . '/' . escapeshellarg($target) . ' 2>&1';
+            $out = [];
+            $code = 0;
             exec($cmd, $out, $code);
             if ($code === 0) {
                 $synced[] = $file;
+            } else {
+                $errors[$file] = implode("\n", $out);
             }
         }
 
-        return ['success' => count($synced) > 0, 'synced' => count($synced) > 0, 'files' => $synced];
+        return [
+            'success' => count($synced) > 0,
+            'synced' => count($synced) > 0,
+            'files' => $synced,
+            'bucket' => "$bucket/$path",
+            'errors' => $errors,
+        ];
     }
 
     /**
@@ -211,6 +222,8 @@ class PushData
         $target = "$path/notifications.json";
         $local = "$dataDir/notifications.json";
         $cmd = 'hf cp hf://buckets/' . $bucket . '/' . escapeshellarg($target) . ' ' . escapeshellarg($local) . ' 2>&1';
+        $out = [];
+        $code = 0;
         exec($cmd, $out, $code);
 
         return $code === 0 && file_exists($local);
