@@ -5,7 +5,7 @@ function p(url) {
   return BASE + url.replace(/^\//, "");
 }
 
-var APP_VERSION = "12";
+var APP_VERSION = "13";
 var CACHE = "buddhaword-v" + APP_VERSION;
 var STATIC_CACHE = "buddhaword-static-v" + APP_VERSION;
 var ASSETS_CACHE = "buddhaword-assets-v" + APP_VERSION;
@@ -24,10 +24,8 @@ var PRECACHE_STATIC = [
   "/manifest.json",
   "/offline.html",
   "/buddhaword.png",
-  "/icons/Icon-192.png",
-  "/icons/Icon-512.png",
-  "/icons/Icon-maskable-192.png",
-  "/icons/Icon-maskable-512.png",
+  "/images/Icon-192.png",
+  "/images/Icon-512.png",
   "/assets/fonts/PhetsarathOT.ttf",
   "/assets/fonts/PhetsarathOT.woff2",
   "/assets/fonts/NotoSerifLao.ttf",
