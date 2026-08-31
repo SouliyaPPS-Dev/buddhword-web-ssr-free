@@ -297,6 +297,18 @@ function pushApp() {
             .catch(e => alert('ເກີດຂໍ້ຜິດພາດ: ' + e.message));
         },
 
+        async getVapidKey() {
+            if (this.config.vapidPublicKey) return this.config.vapidPublicKey;
+            try {
+                const res = await fetch('<?= url('/api/notify/pubkey') ?>', { cache: 'no-store' });
+                const data = await res.json();
+                if (data.publicKey) {
+                    this.config.vapidPublicKey = data.publicKey;
+                    return data.publicKey;
+                }
+            } catch (e) {}
+            return '';
+        },
         async toggleNotifyUI() {
             if (!('Notification' in window)) {
                 alert('ບຣາວເຊີນີ້ບໍ່ຮອງຮັບ Notification');
@@ -313,31 +325,32 @@ function pushApp() {
                     'warning');
                 return;
             }
-            if (Notification.permission === 'granted') {
-                try {
+            try {
+                const key = await this.getVapidKey();
+                if (!key) {
+                    Swal.fire('ຜິດພາດ', 'ບໍ່ສາມາດດຶງຄີ VAPID ຈາກເຊີເວີໄດ້', 'error');
+                    return;
+                }
+                if (Notification.permission === 'granted') {
                     const reg = await navigator.serviceWorker.ready;
                     const sub = await reg.pushManager.subscribe({
                         userVisibleOnly: true,
-                        applicationServerKey: this.urlBase64ToUint8Array(this.config.vapidPublicKey)
+                        applicationServerKey: this.urlBase64ToUint8Array(key)
                     });
                     await this.saveSubscription(sub);
                     this.notifyEnabled = true;
                     new Notification('ທົດສອບສຳເລັດ', { body: 'ການແຈ້ງເຕືອນພ້ອມໃຊ້ງານ' });
-                } catch (e) {
-                    Swal.fire('ຜິດພາດ', e.message, 'error');
+                    return;
                 }
-                return;
-            }
-            const perm = await Notification.requestPermission();
-            if (perm !== 'granted') {
-                Swal.fire('ບໍ່ໄດ້ອະນຸຍາດ', 'ກະລຸນາອະນຸຍາດການແຈ້ງເຕືອນ', 'warning');
-                return;
-            }
-            try {
+                const perm = await Notification.requestPermission();
+                if (perm !== 'granted') {
+                    Swal.fire('ບໍ່ໄດ້ອະນຸຍາດ', 'ກະລຸນາອະນຸຍາດການແຈ້ງເຕືອນ', 'warning');
+                    return;
+                }
                 const reg = await navigator.serviceWorker.ready;
                 const sub = await reg.pushManager.subscribe({
                     userVisibleOnly: true,
-                    applicationServerKey: this.urlBase64ToUint8Array(this.config.vapidPublicKey)
+                    applicationServerKey: this.urlBase64ToUint8Array(key)
                 });
                 await this.saveSubscription(sub);
                 this.notifyEnabled = true;
