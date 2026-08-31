@@ -8,3 +8,5 @@ storage/cache/sqlite/*
 storage/cache/*.json
 storage/tts/*.mp3
 storage/tts/*.json
+data/
+storage/data/

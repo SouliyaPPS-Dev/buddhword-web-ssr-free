@@ -2,7 +2,9 @@
   "name": "buddhaword/app",
   "require": {
     "smalot/pdfparser": "^2.12",
-    "afaya/edge-tts": "^1.7"
+    "afaya/edge-tts": "^1.7",
+    "minishlink/web-push": "^11.0",
+    "php-http/curl-client": "^2.4"
   },
   "autoload": {
     "psr-4": {

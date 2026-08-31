@@ -5,7 +5,7 @@ function p(url) {
   return BASE + url.replace(/^\//, "");
 }
 
-var APP_VERSION = "10";
+var APP_VERSION = "13";
 var CACHE = "buddhaword-v" + APP_VERSION;
 var STATIC_CACHE = "buddhaword-static-v" + APP_VERSION;
 var ASSETS_CACHE = "buddhaword-assets-v" + APP_VERSION;
@@ -24,10 +24,8 @@ var PRECACHE_STATIC = [
   "/manifest.json",
   "/offline.html",
   "/buddhaword.png",
-  "/icons/Icon-192.png",
-  "/icons/Icon-512.png",
-  "/icons/Icon-maskable-192.png",
-  "/icons/Icon-maskable-512.png",
+  "/images/Icon-192.png",
+  "/images/Icon-512.png",
   "/assets/fonts/PhetsarathOT.ttf",
   "/assets/fonts/PhetsarathOT.woff2",
   "/assets/fonts/NotoSerifLao.ttf",
@@ -114,6 +112,49 @@ var PRECACHE_STATIC = [
   "/sutra/ໂສດາບັນ",
   "/js/offline.js",
 ];
+
+function resolveUrl(pathOrUrl) {
+  if (!pathOrUrl) return self.location.origin + p("/");
+  if (/^https?:\/\//i.test(pathOrUrl)) return pathOrUrl;
+  return self.location.origin + p(pathOrUrl);
+}
+
+self.addEventListener("push", function (event) {
+  var data = {};
+  try {
+    if (event.data) data = event.data.json();
+  } catch (e) {
+    data = { title: (event.data && event.data.text()) || "ການແຈ້ງເຕືອນ", body: "" };
+  }
+  var title = data.title || "ຄຳສອນພຸດທະ";
+  var options = {
+    body: data.body || "",
+    icon: p("/buddhaword.png"),
+    badge: p("/icons/Icon-192.png"),
+    data: { url: data.url || p("/") },
+    vibrate: [100, 50, 100],
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener("notificationclick", function (event) {
+  event.notification.close();
+  var target = resolveUrl((event.notification.data && event.notification.data.url) || "/");
+  event.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then(function (windowClients) {
+      for (var i = 0; i < windowClients.length; i++) {
+        var client = windowClients[i];
+        if ("focus" in client) {
+          client.navigate(target);
+          return client.focus();
+        }
+      }
+      if (clients.openWindow) {
+        return clients.openWindow(target);
+      }
+    })
+  );
+});
 
 self.addEventListener("install", function (event) {
   event.waitUntil(
