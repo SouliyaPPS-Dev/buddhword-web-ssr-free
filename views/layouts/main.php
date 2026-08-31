@@ -1007,7 +1007,7 @@
         },
         async enablePushSubscription() {
             try {
-                // Ensure service worker is registered
+                /* Ensure service worker is registered */
                 let reg = await navigator.serviceWorker.getRegistration();
                 if (!reg) {
                     reg = await navigator.serviceWorker.register('<?= url('sw.js') ?>');
