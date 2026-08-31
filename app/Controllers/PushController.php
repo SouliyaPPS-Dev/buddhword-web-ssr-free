@@ -162,20 +162,23 @@ class PushController
 
         $notificationId = $input['id'] ?? '';
         $model = $this->model();
+        $title = '';
+        $body = '';
+        $url = '';
 
         if ($notificationId) {
             $n = $model->findNotification($notificationId);
-            if (!$n) {
-                $this->json(['success' => false, 'error' => 'Notification not found'], 404);
+            if ($n) {
+                $title = $n['title'] ?? '';
+                $body = $n['body'] ?? '';
+                $url = $n['url'] ?? '';
             }
-            $title = $n['title'] ?? '';
-            $body = $n['body'] ?? '';
-            $url = $n['url'] ?? '';
-        } else {
-            $title = $input['title'] ?? '';
-            $body = $input['body'] ?? '';
-            $url = $input['url'] ?? '';
         }
+
+        // Fallback to input fields (sendNow sends title/body/url too)
+        if ($title === '') $title = $input['title'] ?? '';
+        if ($body === '') $body = $input['body'] ?? '';
+        if ($url === '') $url = $input['url'] ?? '';
 
         if ($title === '') {
             $this->json(['success' => false, 'error' => 'Missing title'], 400);

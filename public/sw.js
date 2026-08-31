@@ -5,7 +5,7 @@ function p(url) {
   return BASE + url.replace(/^\//, "");
 }
 
-var APP_VERSION = "11";
+var APP_VERSION = "12";
 var CACHE = "buddhaword-v" + APP_VERSION;
 var STATIC_CACHE = "buddhaword-static-v" + APP_VERSION;
 var ASSETS_CACHE = "buddhaword-assets-v" + APP_VERSION;

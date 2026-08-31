@@ -83,7 +83,7 @@ class PushData
     public function storeNotification($input)
     {
         $notifications = $this->notifications();
-        $id = $input['id'] ?? uniqid('notif_', true);
+        $id = !empty($input['id']) ? $input['id'] : uniqid('notif_', true);
 
         $entry = [
             'id' => $id,

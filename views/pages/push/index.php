@@ -283,7 +283,7 @@ function pushApp() {
             fetch('<?= url('/api/notify/send') ?>', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: n.id })
+                body: JSON.stringify({ id: n.id, title: n.title || '', body: n.body || '', url: n.url || '' })
             })
             .then(r => r.json())
             .then(data => {
@@ -311,24 +311,35 @@ function pushApp() {
         },
         async toggleNotifyUI() {
             if (!('Notification' in window)) {
-                alert('ບຣາວເຊີນີ້ບໍ່ຮອງຮັບ Notification');
+                Swal.fire('ບໍ່ຮອງຮັບ', 'ບຣາວເຊີນີ້ບໍ່ຮອງຮັບການແຈ້ງເຕືອນ (Push Notification)', 'warning');
                 return;
             }
             if (this.notifyEnabled) {
                 await this.unsubscribeLocal();
                 this.notifyEnabled = false;
+                Swal.fire('ປິດແລ້ວ', 'ປິດການແຈ້ງເຕືອນສຳເລັດ', 'info');
                 return;
             }
             if (Notification.permission === 'denied') {
-                Swal.fire('ກະລຸນາອະນຸຍາດແຈ້ງເຕືອນ',
-                    'ກະລຸນາເປີດການຕັ້ງຄ່າບຣາວເຊີ → Site settings → Notifications → Allow ສຳລັບເວັບນີ້, ແລ້ວ Reload ໜ້າເວັບ.',
-                    'warning');
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'ການແຈ້ງເຕືອນຖືກບລັອກ',
+                    html: '<div class="text-left Lao-font"><p class="mb-2">ກະລຸນາເປີດການຕັ້ງຄ່າບຣາວເຊີ:</p>' +
+                        '<ol class="list-decimal pl-5 space-y-1 text-sm">' +
+                        '<li>ກົດไอຄອນ 🔒 ຂ້າງຫຼັງທີ່ຢູ່ບ່າວ</li>' +
+                        '<li>ເລືອກ <b>Site settings</b></li>' +
+                        '<li>ເລືອກ <b>Notifications</b></li>' +
+                        '<li>ເລືອກ <b>Allow</b></li>' +
+                        '</ol>' +
+                        '<p class="mt-2 text-gray-500">ແລ້ວ Reload ໜ້າເວັບນີ້ໃໝ່</p></div>',
+                    confirmButtonText: 'ເຂົ້າໃຈແລ້ວ'
+                });
                 return;
             }
             try {
                 const key = await this.getVapidKey();
                 if (!key) {
-                    Swal.fire('ຜິດພາດ', 'ບໍ່ສາມາດດຶງຄີ VAPID ຈາກເຊີເວີໄດ້', 'error');
+                    Swal.fire('ຜິດພາດ', 'ບໍ່ສາມາດດຶງຄີ VAPID ຈາກເຊີເວີໄດ້. ກະລຸນາໂຫຼດໜ້າເວັບໃໝ່ແລ້ວລອງໃໝ່.', 'error');
                     return;
                 }
                 if (Notification.permission === 'granted') {
@@ -339,12 +350,12 @@ function pushApp() {
                     });
                     await this.saveSubscription(sub);
                     this.notifyEnabled = true;
-                    new Notification('ທົດສອບສຳເລັດ', { body: 'ການແຈ້ງເຕືອນພ້ອມໃຊ້ງານ' });
+                    new Notification('ທົດສອບສຳເລັດ', { body: 'ການແຈ້ງເຕືອນພ້ອມໃຊ້ງານ. ທ່ານຈະໄດ້ຮັບແຈ້ງເຕືອນເມື່ອມີຂໍ້ຄວາມໃໝ່.' });
                     return;
                 }
                 const perm = await Notification.requestPermission();
                 if (perm !== 'granted') {
-                    Swal.fire('ບໍ່ໄດ້ອະນຸຍາດ', 'ກະລຸນາອະນຸຍາດການແຈ້ງເຕືອນ', 'warning');
+                    Swal.fire('ບໍ່ໄດ້ອະນຸຍາດ', 'ທ່ານບໍ່ໄດ້ອະນຸຍາດການແຈ້ງເຕືອນ. ກະລຸນາລອງໃໝ່ໃນພາຍຫຼັງ.', 'warning');
                     return;
                 }
                 const reg = await navigator.serviceWorker.ready;
@@ -354,9 +365,9 @@ function pushApp() {
                 });
                 await this.saveSubscription(sub);
                 this.notifyEnabled = true;
-                new Notification('ທົດສອບສຳເລັດ', { body: 'ການແຈ້ງເຕືອນພ້ອມໃຊ້ງານ' });
+                new Notification('ທົດສອບສຳເລັດ', { body: 'ການແຈ້ງເຕືອນພ້ອມໃຊ້ງານ. ທ່ານຈະໄດ້ຮັບແຈ້ງເຕືອນເມື່ອມີຂໍ້ຄວາມໃໝ່.' });
             } catch (e) {
-                Swal.fire('ຜິດພາດ', e.message, 'error');
+                Swal.fire('ຜິດພາດ', e.message || 'ເກີດຂໍ້ຜິດພາດໃນການຕັ້ງຄ່າແຈ້ງເຕືອນ', 'error');
             }
         },
 
