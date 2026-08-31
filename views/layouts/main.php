@@ -925,30 +925,42 @@
                 this.notificationsEnabled = !!sub;
             } catch (e) {}
         },
-        async toggleNotifications() {
+        /* Must be synchronous: requestPermission() is called inside the click
+           gesture before any await, otherwise the browser silently returns
+           'default' without showing the native prompt. */
+        toggleNotifications() {
             if (!this.notificationsSupported) {
                 Swal.fire('ບໍ່ຮອງຮັບ', 'ບຣາວເຊີ/ອຸປະກອນນີ້ບໍ່ຮອງຮັບການແຈ້ງເຕືອນ', 'warning');
                 return;
             }
             if (this.notificationsEnabled) {
-                await this.unsubscribePush();
+                this.unsubscribePush();
                 return;
             }
 
-            /* Request permission synchronously inside the user gesture. */
-            let perm = 'denied';
+            const finish = (perm) => {
+                if (perm === 'granted') {
+                    this.enablePushSubscription();
+                } else {
+                    this.showPermissionGuide(perm);
+                }
+            };
+
             try {
-                perm = await Notification.requestPermission();
+                const result = Notification.requestPermission();
+                if (result && typeof result.then === 'function') {
+                    result.then(finish).catch(() => finish(Notification.permission));
+                } else if (result !== undefined) {
+                    finish(result);
+                } else {
+                    /* older Safari uses a callback form */
+                    Notification.requestPermission(finish);
+                }
             } catch (e) {
-                perm = Notification.permission; /* older Safari rejects promise form */
+                finish(Notification.permission);
             }
-
-            if (perm === 'granted') {
-                await this.enablePushSubscription();
-                return;
-            }
-
-            /* perm === 'denied' or 'default' -> cannot auto-subscribe */
+        },
+        showPermissionGuide(perm) {
             Swal.fire({
                 title: perm === 'denied' ? 'ບໍ່ສາມາດເປີດການແຈ້ງເຕືອນໄດ້' : 'ຍັງບໍ່ໄດ້ອະນຸຍາດ',
                 text: perm === 'denied'
