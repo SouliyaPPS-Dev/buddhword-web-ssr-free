@@ -1013,6 +1013,18 @@
                     reg = await navigator.serviceWorker.register('<?= url('sw.js') ?>');
                 }
                 reg = await navigator.serviceWorker.ready;
+                const existingSub = await reg.pushManager.getSubscription();
+                if (existingSub) {
+                    const saveRes = await fetch('<?= url('/api/notify/subscribe') ?>', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(existingSub)
+                    });
+                    if (saveRes.ok) {
+                        this.notificationsEnabled = true;
+                    }
+                    return;
+                }
                 const key = await this.fetchVapidKey();
                 if (!key) {
                     Swal.fire('ຍັງບໍ່ກຽມພ້ອມ', 'ການແຈ້ງເຕືອນຍັງບໍ່ຖືກຕັ້ງຄ່າຢູ່ເຊີເວີ', 'info');
@@ -1029,7 +1041,6 @@
                 });
                 if (saveRes.ok) {
                     this.notificationsEnabled = true;
-                    Swal.fire('ສຳເລັດ', 'ການແຈ້ງເຕືອນຖືກເປີດແລ້ວ', 'success');
                 }
             } catch (e) {
                 Swal.fire('ຜິດພາດ', e.message || 'ເກີດຂໍ້ຜິດພາດໃນການຕັ້ງຄ່າ', 'error');
