@@ -1580,35 +1580,37 @@
     </script>
 
     <script>
+    /* App Install Modal – shows every page load until user clicks download button */
     (function() {
         if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) return;
-        if (localStorage.getItem('buddhaword_store_prompt_dismissed') === 'true') return;
         if (localStorage.getItem('buddhaword_app_installed') === 'true') return;
 
         var ua = navigator.userAgent || navigator.vendor || window.opera;
         var isAndroid = /android/i.test(ua);
         var isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        var isSafari = (ua.indexOf('Safari') > -1 && ua.indexOf('Chrome') === -1 && ua.indexOf('CriOS') === -1 && ua.indexOf('FxiOS') === -1);
 
-        if (!isAndroid && !isIOS) return;
+        if (!isAndroid && !isIOS && !isSafari) return;
 
         var storeUrl = isAndroid
-            ? 'https://play.google.com/store/apps/details?id=com.buddha.lao_tipitaka&pcampaignid=web_share'
+            ? 'https://play.google.com/store/apps/details?id=com.buddha.lao_tipitaka'
             : 'https://apps.apple.com/la/app/buddhaword-lao/id6751720204';
 
-        var badgeImg = isAndroid
-            ? '<?= url('assets/images/play_store.png.webp') ?>'
-            : '<?= url('assets/images/app_store.svg') ?>';
-
-        var badgeAlt = isAndroid ? 'Google Play' : 'App Store';
+        var storeIcon = isAndroid
+            ? '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:middle;margin-right:6px;"><path d="M3.18 23.78c.36.2.78.22 1.15.06l12.24-6.74-3.08-3.08L3.18 23.78zm-1.5-1.08V1.3c0-.46.25-.86.65-1.08.15-.08.31-.12.47-.12.17 0 .33.05.48.14l14.3 8.21-3.1 3.1L1.68 22.7zM17.13 14.5L5.3 21.03l10.55-10.55 1.28 1.28v2.74zM21.5 12l-3.57-2.05-2.2 2.2L21.5 12zM4.9 2.24L16.44 8.7l-3.08 3.08L4.9 2.24z"/></svg>'
+            : '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:middle;margin-right:6px;"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>';
 
         setTimeout(function() {
             Swal.fire({
                 html: '<div style="text-align:center;padding:8px;">' +
-                    '<p style="font-size:18px;font-weight:bold;color:#333;margin-bottom:12px;font-family:\'Noto Sans Lao\',sans-serif;">ຕິດຕັ້ງແອັບ ຄຳສອນພຸດທະ</p>' +
-                    '<p style="font-size:14px;color:#666;margin-bottom:20px;font-family:\'Noto Sans Lao\',sans-serif;">ໃຊ້ງານສະດວກຂຶ້ນ ດ້ວຍການຕິດຕັ້ງແອັບພລິເຄຊັນ</p>' +
-                    '<a id="store-install-link" href="' + storeUrl + '" target="_blank" rel="noopener noreferrer" style="display:inline-block;text-decoration:none;">' +
-                        '<img src="' + badgeImg + '" alt="' + badgeAlt + '" style="height:56px;width:auto;border-radius:8px;">' +
+                    '<p style="font-size:17px;color:#333;margin-bottom:14px;line-height:1.7;font-family:\'Noto Sans Lao\',sans-serif;">' +
+                        'ອ່ານຄຳສອນພຣະພຸດທະເຈົ້າໄດ້ທີ່ ແອັບນີ້ເລີຍ 👇🏻' +
+                    '</p>' +
+                    '<a id="store-install-link" href="' + storeUrl + '" target="_blank" rel="noopener noreferrer" ' +
+                        'style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none;background:#795548;color:#fff;padding:12px 28px;border-radius:12px;font-size:16px;font-weight:bold;font-family:\'Noto Sans Lao\',sans-serif;box-shadow:0 4px 12px rgba(121,85,72,.35);transition:transform .2s;">' +
+                        storeIcon + 'ດາວໂຫຼດ' +
                     '</a>' +
+                    '<p style="font-size:12px;color:#999;margin-top:14px;font-family:\'Noto Sans Lao\',sans-serif;">Web: <a href="https://buddhaword-web.hf.space" target="_blank" style="color:#795548;text-decoration:underline;">buddhaword-web.hf.space</a></p>' +
                     '</div>',
                 showConfirmButton: false,
                 showCloseButton: true,
@@ -1620,13 +1622,12 @@
                 didOpen: function() {
                     var link = document.getElementById('store-install-link');
                     if (link) {
+                        link.addEventListener('mouseenter', function() { this.style.transform = 'scale(1.04)'; });
+                        link.addEventListener('mouseleave', function() { this.style.transform = 'scale(1)'; });
                         link.addEventListener('click', function() {
                             localStorage.setItem('buddhaword_app_installed', 'true');
                         });
                     }
-                },
-                didClose: function() {
-                    localStorage.setItem('buddhaword_store_prompt_dismissed', 'true');
                 }
             });
         }, 2000);
