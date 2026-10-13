@@ -686,8 +686,18 @@
                 const videosRes = results.videos || { success: false };
                 const calendarRes = results.calendar || { success: false };
 
+                if (sutrasRes.success) {
+                    try { localStorage.setItem('buddhaword_sutras', JSON.stringify(sutrasRes.data)); } catch (_) {}
+                    if (sutrasRes.version) {
+                        localStorage.setItem('buddhaword_version', sutrasRes.version.toString());
+                        this.cachedVersion = sutrasRes.version;
+                    }
+                }
+
                 const allOk = sutrasRes.success && booksRes.success && videosRes.success && calendarRes.success;
                 if (!allOk) throw new Error('ບາງຂໍ້ມູນບໍ່ສາມາດອັບເດດໄດ້');
+
+                this.hasUpdate = false;
 
                 if (navigator.serviceWorker.controller) {
                     navigator.serviceWorker.controller.postMessage({
