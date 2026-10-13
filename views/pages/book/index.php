@@ -103,6 +103,31 @@
 
     <!-- Server-rendered Books Grid (shown by default, hidden when search/filter active) -->
     <div x-show="searchTerm === '' && selectedDharma === ''" class="grid gap-4 grid-cols-3 sm:grid-cols-5 md:grid-cols-5 lg:grid-cols-5 mb-20 w-full max-w-5xl px-2">
+        <!-- Cover: opens the full-screen slide deck (ປະຕິຈຈະສະມຸບບາດ) -->
+        <div class="flex flex-col items-center" style="margin-bottom: -2rem;">
+            <a href="<?= url('/book/slides') ?>"
+               class="z-10 flex flex-col justify-between items-center cursor-pointer group">
+                <div class="w-[115px] sm:w-[130px] md:w-[140px] lg:w-[185px] h-[205px] sm:h-[205px] md:h-[255px] lg:h-[305px] flex-shrink-0 mx-2 shadow-xl transition-transform duration-300 transform group-hover:-translate-y-2 overflow-hidden flex flex-col relative"
+                     style="border-radius: 0; background: transparent; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2), 0 4px 6px -2px rgba(0,0,0,0.1), inset 0 -3px 6px rgba(0,0,0,0.2);">
+                    <div class="flex-grow" style="margin-top: 1rem;">
+                        <p class="text-white text-center text-xs sm:text-sm Lao-font leading-tight px-1 truncate">ວົງລໍ້ ກິເລສ · ກຳ · ວິບາກ</p>
+                    </div>
+                    <img src="<?= url('assets/images/paticca-wheel-cover.png') ?>"
+                         alt="ວົງລໍ້ ກິເລສ · ກຳ · ວິບາກ"
+                         class="z-0 object-cover transition-opacity duration-300 mt-1 h-[165px] sm:h-[200px] md:h-[220px] lg:h-[270px] w-full"
+                         style="border-radius: 0;">
+                </div>
+                <div class="w-[90%] h-4 mt-[-1.5rem] bg-gray-900 opacity-25 blur-md"></div>
+            </a>
+            <div class="relative w-full mt-[-0rem] h-6 sm:h-5 md:h-6 lg:h-8 z-1" style="width: 115%;">
+                <div class="absolute top-0 left-0 w-full h-1 sm:h-3 md:h-4 bg-[#B96A44] shadow-lg"></div>
+                <div class="absolute top-1 left-0 w-full h-2 sm:h-1.5 bg-[#E0895C] shadow mb-0"></div>
+                <div class="absolute bottom-0 left-0 w-full h-1 bg-[#A65D3B] shadow-inner mb-4"></div>
+                <div class="absolute bottom-0 left-0 w-full h-1 sm:h-2 bg-[#B96A44] shadow-inner mb-3"></div>
+                <div class="absolute top-0 left-0 w-full h-4 bg-[#E0895C] opacity-50"></div>
+                <div class="absolute -top-2 left-2 w-[96%] h-4 bg-black opacity-10 blur-md"></div>
+            </div>
+        </div>
         <?php foreach ($books as $book): ?>
             <div class="flex flex-col items-center" style="margin-bottom: -2rem;">
                 <a href="<?= url('/book/view/' . htmlspecialchars($book['ID'])) ?>"

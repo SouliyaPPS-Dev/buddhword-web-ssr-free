@@ -6,6 +6,7 @@ return [
     '/sutra/details/{id}' => 'SutraController@show',
     '/favorites' => 'FavoriteController@index',
     '/book' => 'BookController@index',
+    '/book/slides' => 'BookController@slides',
     '/book/view/{id}' => 'BookController@show',
     '/video' => 'VideoController@index',
     '/video/view/{id}' => 'VideoController@show',

@@ -31,6 +31,37 @@ class BookController {
         ]);
     }
 
+    // The 12 links in clock order (hour 12 = ອະວິຊາ), with their round (ວັດຕະ: ກິເລສ/ກຳ/ວິບາກ),
+    // Pali formula and the period (ກາລະ) each belongs to.
+    public static function paticca() {
+        return [
+            ['hour' => 12, 'vatta' => 'ກິເລສ', 'pali' => 'ອະວິຊຊາ ປັດຈະຍາ ສັງຂາຣາ', 'name' => 'ອະວິຊາ', 'mean' => 'ຄວາມບໍ່ຮູ້ຕາມເປັນຈິງ', 'detail' => 'ບໍ່ຮູ້ອະລິຍະສັດ 4: ທຸກ, ເຫດຂອງທຸກ, ຄວາມດັບທຸກ ແລະ ຂໍ້ປະຕິບັດເຖິງຄວາມດັບທຸກ.', 'kala' => 'past'],
+            ['hour' => 1, 'vatta' => 'ກຳ', 'pali' => 'ສັງຂາຣະ ປັດຈະຍາ ວິນຍານັງ', 'name' => 'ສັງຂານ', 'mean' => 'ການປຸງແຕ່ງ (ກຳ)', 'detail' => 'ການປຸງແຕ່ງ 3 ທາງ: ກາຍ, ວາຈາ ແລະ ໃຈ.', 'kala' => 'past'],
+            ['hour' => 2, 'vatta' => 'ວິບາກ', 'pali' => 'ວິນຍານະ ປັດຈະຍາ ນາມະຣູປັງ', 'name' => 'ວິນຍານ', 'mean' => 'ທາດຮູ້ແຈ້ງອາລົມ', 'detail' => 'ວິນຍານ 6: ທາງຕາ, ຫູ, ດັງ, ລີ້ນ, ກາຍ ແລະ ໃຈ.', 'kala' => 'present-result'],
+            ['hour' => 3, 'vatta' => 'ວິບາກ', 'pali' => 'ນາມະຣູປະ ປັດຈະຍາ ສະລາຍະຕະນັງ', 'name' => 'ນາມຮູບ', 'mean' => 'ຈິດໃຈ ແລະ ຮ່າງກາຍ', 'detail' => 'ນາມ: ເວທະນາ, ສັນຍາ, ສັງຂານ — ຮູບ: ດິນ, ນ້ຳ, ໄຟ, ລົມ.', 'kala' => 'present-result'],
+            ['hour' => 4, 'vatta' => 'ວິບາກ', 'pali' => 'ສະລາຍະຕະນະ ປັດຈະຍາ ຜັສໂສ', 'name' => 'ສະລາຍະຕະນະ', 'mean' => 'ຊ່ອງທາງຮັບຮູ້ 6', 'detail' => 'ຕາ, ຫູ, ດັງ, ລີ້ນ, ກາຍ, ໃຈ — ປະຕູທີ່ວິນຍານໄປຮັບຮູ້.', 'kala' => 'present-result'],
+            ['hour' => 5, 'vatta' => 'ວິບາກ', 'pali' => 'ຜັສສະ ປັດຈະຍາ ເວທະນາ', 'name' => 'ຜັດສະ', 'mean' => 'ການກະທົບອາລົມ', 'detail' => 'ຜັດສະ = ອາຍະຕະນະໃນ + ອາລົມ + ວິນຍານ ມາປະຈວບກັນ.', 'kala' => 'present-result'],
+            ['hour' => 6, 'vatta' => 'ວິບາກ', 'pali' => 'ເວທະນາ ປັດຈະຍາ ຕັນຫາ', 'name' => 'ເວທະນາ', 'mean' => 'ການສະເຫວີຍອາລົມ', 'detail' => 'ຮູ້ສຶກ ສຸກ, ທຸກ ຫຼື ເສີຍໆ ຫຼັງຈາກການກະທົບ.', 'kala' => 'present-result'],
+            ['hour' => 7, 'vatta' => 'ກິເລສ', 'pali' => 'ຕັນຫາ ປັດຈະຍາ ອຸປາທານັງ', 'name' => 'ຕັນຫາ', 'mean' => 'ຄວາມທະຍານຢາກ', 'detail' => 'ຄວາມຢາກໃນເວທະນາ: ກາມຕັນຫາ, ພະວະຕັນຫາ, ວິພະວະຕັນຫາ.', 'kala' => 'present-cause'],
+            ['hour' => 8, 'vatta' => 'ກິເລສ', 'pali' => 'ອຸປາທານະ ປັດຈະຍາ ພະໂວ', 'name' => 'ອຸປາທານ', 'mean' => 'ຄວາມຍຶດຕິດ', 'detail' => 'ຄວາມຍຶດໝັ້ນຖືໝັ້ນ — ລວມທັງການຍຶດວ່າ “ນີ້ແມ່ນຕົວເຮົາ”.', 'kala' => 'present-cause'],
+            ['hour' => 9, 'vatta' => 'ກຳ', 'pali' => 'ພະວະ ປັດຈະຍາ ຊາຕິ', 'name' => 'ພົບ', 'mean' => 'ພາວະຊີວິດເປັນຢູ່', 'detail' => 'ຄວາມເປັນ: ກຳມະພົບ (ກຳ) ແລະ ອຸປັດຕິພົບ (ຜົນຂອງກຳ).', 'kala' => 'present-cause'],
+            ['hour' => 10, 'vatta' => 'ວິບາກ', 'pali' => 'ຊາຕິ ປັດຈະຍາ ຊະຣາມະຣະນັງ', 'name' => 'ຊາດ', 'mean' => 'ຄວາມເກີດ', 'detail' => 'ຄວາມປາກົດຂຶ້ນຂອງຂັນທ໌ 5 — ການເກີດຂອງ “ຕົວເຮົາ” ໃໝ່.', 'kala' => 'future'],
+            ['hour' => 11, 'vatta' => 'ວິບາກ', 'pali' => 'ໂສກະ ປະລິເທວະ ທຸກຂະ ໂທມະນັດສຸປາຍາສາ ສຳພະວັນຕິ', 'name' => 'ຊະລາມໍລະນະ', 'mean' => 'ຄວາມແກ່ ແລະ ຄວາມຕາຍ', 'detail' => 'ທຸກ: ໂສກະ, ປະລິເທວະ, ທຸກຂະ, ໂທມະນັດ, ອຸປາຍາສະ — ແລ້ວວົນກັບໄປຫາອະວິຊາ.', 'kala' => 'future'],
+        ];
+    }
+
+    // Full-screen slide deck (no site layout), opened from the cover card at the start of the book list.
+    public function slides() {
+        $paticca = self::paticca();
+        $seo = [
+            'title' => 'ວົງລໍ້ ກິເລສ · ກຳ · ວິບາກ - ຄຳສອນພຸດທະ',
+            'description' => 'ປະຕິຈຈະສະມຸບບາດ · ອາການ 20 — ເວລາກັບຈິດ, ແສງຈາກດວງດາວ ແລະ ວົງລໍ້ ກິເລສ · ກຳ · ວິບາກ',
+            'image' => absoluteUrl('assets/images/paticca-wheel-cover.png'),
+            'canonical' => canonicalUrl(),
+        ];
+        require __DIR__ . '/../../views/pages/book/slides.php';
+    }
+
     public function show($id) {
         $books = Book::getAll();
         $book = null;
