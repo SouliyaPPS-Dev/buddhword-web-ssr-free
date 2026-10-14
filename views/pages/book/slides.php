@@ -23,23 +23,18 @@
   .deck { --gold: #d4af37; --gold-2: #f5d98b; background: radial-gradient(1200px 600px at 85% -10%, rgba(212,175,55,.14), transparent 60%), radial-gradient(900px 500px at -10% 110%, rgba(99,102,241,.16), transparent 60%), linear-gradient(160deg, #070a18 0%, #05060d 60%, #0d0b07 100%); color: #f4f1ea; }
   .deck { display: flex; flex-direction: column; height: max(620px, calc(100dvh - 190px)); font-family: 'Noto Sans Lao', 'Plus Jakarta Sans', sans-serif; }
   .deck.presenting { position: fixed; inset: 0; z-index: 100; height: 100dvh; border-radius: 0; border: 0; }
-  /* Night sky behind every slide */
+  /* Night sky behind every slide — kept dim and slow so it soothes rather than distracts */
   .sky { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
-  .sky-milkyway { position: absolute; left: -20%; right: -20%; top: 30%; height: 38%; transform: rotate(-18deg); filter: blur(28px); opacity: .5;
-    background: radial-gradient(ellipse at 30% 50%, rgba(160,170,255,.16), transparent 60%), radial-gradient(ellipse at 65% 45%, rgba(245,217,139,.10), transparent 55%), linear-gradient(90deg, transparent, rgba(200,205,255,.07) 30%, rgba(255,240,210,.08) 60%, transparent); }
+  .sky-milkyway { position: absolute; left: -20%; right: -20%; top: 30%; height: 38%; transform: rotate(-18deg); filter: blur(36px); opacity: .22;
+    background: radial-gradient(ellipse at 30% 50%, rgba(160,170,255,.14), transparent 60%), radial-gradient(ellipse at 65% 45%, rgba(245,217,139,.07), transparent 55%), linear-gradient(90deg, transparent, rgba(200,205,255,.05) 30%, rgba(255,240,210,.05) 60%, transparent); }
   .sky-layer { position: absolute; top: 0; left: 0; border-radius: 9999px; background: transparent; }
-  .sky-dust { width: 1px; height: 1px; animation: sky-breathe 9s ease-in-out infinite alternate; }
-  .sky-mid { width: 1.5px; height: 1.5px; animation: sky-breathe 6s ease-in-out -3s infinite alternate; }
-  .sky-bright { width: 2px; height: 2px; animation: sky-breathe 4.5s ease-in-out -1.5s infinite alternate; }
-  @keyframes sky-breathe { from { opacity: .35; } to { opacity: 1; } }
-  .twinkle { position: absolute; border-radius: 9999px; background: var(--c); box-shadow: 0 0 6px 1px var(--c); animation: twinkle var(--d) ease-in-out var(--delay) infinite; }
-  .twinkle.glint::before, .twinkle.glint::after { content: ''; position: absolute; left: 50%; top: 50%; background: linear-gradient(90deg, transparent, var(--c), transparent); transform: translate(-50%, -50%); }
-  .twinkle.glint::before { width: 900%; height: 1px; }
-  .twinkle.glint::after { width: 1px; height: 900%; background: linear-gradient(180deg, transparent, var(--c), transparent); }
-  @keyframes twinkle { 0%, 100% { opacity: .15; transform: scale(.6); } 50% { opacity: 1; transform: scale(1); } }
-  .shooting-star { position: absolute; width: 140px; height: 1.5px; border-radius: 9999px; background: linear-gradient(90deg, rgba(255,255,255,0), #fff 85%, #f5d98b); opacity: 0; transform: rotate(-32deg); animation: shoot var(--d) ease-in var(--delay) infinite; }
-  @keyframes shoot { 0%, 92% { opacity: 0; translate: 0 0; } 93% { opacity: 1; } 100% { opacity: 0; translate: -340px 210px; } }
-  @media (prefers-reduced-motion: reduce) { .sky * { animation: none !important; } .shooting-star { display: none; } }
+  .sky-dust { width: 1px; height: 1px; opacity: .3; }
+  .sky-mid { width: 1.5px; height: 1.5px; animation: sky-breathe 14s ease-in-out -4s infinite alternate; }
+  .sky-bright { width: 1.5px; height: 1.5px; animation: sky-breathe 18s ease-in-out -9s infinite alternate; }
+  @keyframes sky-breathe { from { opacity: .25; } to { opacity: .5; } }
+  .twinkle { position: absolute; border-radius: 9999px; background: var(--c); box-shadow: 0 0 4px 0 var(--c); animation: twinkle var(--d) ease-in-out var(--delay) infinite; }
+  @keyframes twinkle { 0%, 100% { opacity: .12; } 50% { opacity: .55; } }
+  @media (prefers-reduced-motion: reduce) { .sky * { animation: none !important; } }
   .slide-stage { flex: 1; min-height: 0; position: relative; }
   .slide { position: absolute; inset: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: rgba(212,175,55,.45) transparent; }
   .slide > * { margin: auto; }
@@ -54,12 +49,19 @@
   .rise { animation: rise .7s cubic-bezier(.16,1,.3,1) both; }
   @keyframes rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
 
+  /* Two layers: measured fact (science, cool blue) vs. analogy for reflection (dharma, gold) */
+  .layer { display: inline-flex; align-items: center; gap: .45rem; padding: .3rem .8rem; border-radius: 9999px; font-size: 11px; font-weight: 800; letter-spacing: .04em; }
+  .layer-sci { color: #7dd3fc; background: rgba(125,211,252,.10); border: 1px solid rgba(125,211,252,.45); }
+  .layer-dharma { color: #f5d98b; background: rgba(212,175,55,.10); border: 1px dashed rgba(212,175,55,.6); }
+  .sci-card { background: linear-gradient(160deg, rgba(125,211,252,.08), rgba(125,211,252,.02)); border: 1px solid rgba(125,211,252,.28); }
+  .sci-num { font-variant-numeric: tabular-nums; color: #e0f2fe; }
+  .src { font-size: 10.5px; color: rgba(255,255,255,.45); }
+  .src a { color: rgba(125,211,252,.85); text-decoration: underline; text-underline-offset: 2px; }
+  .src-dharma a { color: rgba(245,217,139,.85); }
+
   /* Light travelling along a path */
   .photon { position: absolute; top: 50%; width: 10px; height: 10px; margin-top: -5px; border-radius: 9999px; background: #f5d98b; box-shadow: 0 0 14px 4px rgba(245,217,139,.7); animation: travel 2.6s linear infinite; }
   @keyframes travel { from { left: 0; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } to { left: calc(100% - 10px); opacity: 0; } }
-  /* A star that shines, then goes out */
-  .dying-star { animation: die 6s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
-  @keyframes die { 0%, 45% { opacity: 1; transform: scale(1); } 60% { opacity: .15; transform: scale(.6); } 90% { opacity: .15; transform: scale(.6); } 100% { opacity: 1; transform: scale(1); } }
   /* Moments of mind arising and ceasing */
   .moment { animation: blink 2.4s ease-in-out infinite; }
   @keyframes blink { 0%, 100% { opacity: .12; transform: scale(.7); } 12% { opacity: 1; transform: scale(1); } 30% { opacity: .12; transform: scale(.7); } }
@@ -78,7 +80,7 @@
     body, main, #timeline { background: #05060d !important; padding: 0 !important; margin: 0 !important; }
     .deck { display: block !important; height: auto !important; position: static !important; border-radius: 0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .deck .slide { display: flex !important; position: relative !important; overflow: visible !important; min-height: 100vh; break-after: page; }
-    .rise, .photon, .moment, .dying-star, .vibrate, .note, .shake { animation: none !important; }
+    .rise, .photon, .moment, .vibrate, .note, .shake { animation: none !important; }
   }
 </style>
 </head>
@@ -86,11 +88,12 @@
 <section id="timeline" lang="lo" x-data="timelineDeck()" x-init="init()" @keydown.window="onKey($event)">
     <!-- Deck -->
     <div x-ref="deck" class="deck presenting overflow-hidden"
-         @touchstart.passive="touchX = $event.touches[0].clientX" @touchend="onSwipe($event.changedTouches[0].clientX)">
+         @touchstart.passive="tStart($event)" @touchend="onSwipe($event)">
 
+      <!-- Night sky: seeded so the stars stay in place between visits -->
       <?php
       mt_srand(2026);
-      $starColors = ['#ffffff', '#ffffff', '#ffffff', '#f5d98b', '#cfe0ff'];
+      $starColors = ['#e8ecf5', '#e8ecf5', '#e8ecf5', '#e9dcb4', '#c9d6ee'];
       $shadows = function (int $n, string $blur) use ($starColors) {
           $out = [];
           for ($s = 0; $s < $n; $s++) {
@@ -99,20 +102,18 @@
           return implode(',', $out);
       };
       $twinkles = [];
-      for ($s = 0; $s < 42; $s++) {
-          $twinkles[] = [mt_rand(10, 990) / 10, mt_rand(10, 990) / 10, mt_rand(15, 35) / 10, $starColors[mt_rand(0, 4)], mt_rand(25, 70) / 10, -mt_rand(0, 70) / 10, $s % 7 === 0];
+      for ($s = 0; $s < 16; $s++) {
+          $twinkles[] = [mt_rand(10, 990) / 10, mt_rand(10, 990) / 10, mt_rand(12, 22) / 10, $starColors[mt_rand(0, 4)], mt_rand(80, 140) / 10, -mt_rand(0, 140) / 10];
       }
       ?>
       <div class="sky no-print" aria-hidden="true">
         <div class="sky-milkyway"></div>
-        <div class="sky-layer sky-dust" style="box-shadow: <?php echo $shadows(260, '0'); ?>"></div>
-        <div class="sky-layer sky-mid" style="box-shadow: <?php echo $shadows(90, '1px'); ?>"></div>
-        <div class="sky-layer sky-bright" style="box-shadow: <?php echo $shadows(30, '3px'); ?>"></div>
+        <div class="sky-layer sky-dust" style="box-shadow: <?php echo $shadows(170, '0'); ?>"></div>
+        <div class="sky-layer sky-mid" style="box-shadow: <?php echo $shadows(50, '1px'); ?>"></div>
+        <div class="sky-layer sky-bright" style="box-shadow: <?php echo $shadows(14, '2px'); ?>"></div>
         <?php foreach ($twinkles as $t): ?>
-        <span class="twinkle<?php echo $t[6] ? ' glint' : ''; ?>" style="left:<?php echo $t[0]; ?>%;top:<?php echo $t[1]; ?>%;width:<?php echo $t[2]; ?>px;height:<?php echo $t[2]; ?>px;--c:<?php echo $t[3]; ?>;--d:<?php echo $t[4]; ?>s;--delay:<?php echo $t[5]; ?>s"></span>
+        <span class="twinkle" style="left:<?php echo $t[0]; ?>%;top:<?php echo $t[1]; ?>%;width:<?php echo $t[2]; ?>px;height:<?php echo $t[2]; ?>px;--c:<?php echo $t[3]; ?>;--d:<?php echo $t[4]; ?>s;--delay:<?php echo $t[5]; ?>s"></span>
         <?php endforeach; ?>
-        <span class="shooting-star" style="left:78%;top:12%;--d:14s;--delay:3s"></span>
-        <span class="shooting-star" style="left:42%;top:6%;--d:23s;--delay:11s"></span>
       </div>
       <?php mt_srand(); ?>
 
@@ -132,122 +133,188 @@
       </div>
 
       <div class="slide-stage">
-        <!-- 4. The present we feel — flower example -->
-        <div class="slide flex px-6 sm:px-16 py-8 sm:py-10" x-show="i===0" x-transition.opacity.duration.500ms>
-          <div class="w-full">
-            <p class="kicker text-xs sm:text-sm font-bold text-[#d4af37]">ເວລາກັບຈິດ · ຕອນທີ 1</p>
-            <h2 class="lux-title text-3xl sm:text-5xl mt-3">“ປັດຈຸບັນ” ທີ່ເຮົາຮູ້ສຶກ <span class="lux-gold">ບໍ່ໄດ້ມີຢູ່ແທ້</span></h2>
-            <p class="text-white/65 mt-4 max-w-3xl text-sm sm:text-base leading-relaxed">ຕົວຢ່າງ: ເຮົາເຫັນດອກໄມ້ — ກວ່າຈະຮັບຮູ້ວ່າ “ນັ້ນແມ່ນດອກໄມ້” ສິ່ງທີ່ເຮົາຮັບຮູ້ ແລະ ຮູ້ສຶກໄດ້ນັ້ນ ກໍເປັນ <b class="text-[#f5d98b]">ອະດີດ</b> ໄປແລ້ວ.</p>
+        <?php
+        // Layer badges: each "time & mind" slide states up front whether it shows measured fact or an analogy for reflection.
+        $sciTag = '<span class="layer layer-sci"><i class="fas fa-flask"></i>ວິທະຍາສາດ · ຂໍ້ເທັດຈິງ</span>';
+        $dharmaTag = '<span class="layer layer-dharma"><i class="fas fa-dharmachakra"></i>ທຳມະ · ອຸປະມາ ເພື່ອພິຈາລະນາ</span>';
+        ?>
 
-            <!-- Illustration: flower → light → eye → mind → "that's a flower" -->
-            <div class="lux-card rounded-[28px] p-5 sm:p-8 mt-8 rise">
-              <div class="grid grid-cols-[auto_1fr_auto_1fr_auto_1fr_auto] items-center gap-2 sm:gap-4">
-                <?php $steps = [['fa-spa', 'ດອກໄມ້', 'ສິ່ງທີ່ຢູ່ຕໍ່ໜ້າ'], ['fa-eye', 'ຕາ', 'ແສງກະທົບຕາ'], ['fa-brain', 'ຈິດຮັບຮູ້', 'ແປຄວາມໝາຍ'], ['fa-comment-dots', '“ດອກໄມ້”', 'ຮູ້ສຶກວ່າ “ຕອນນີ້”']];
+        <!-- 4. The present we feel — flower example -->
+        <div class="slide flex px-4 sm:px-16 py-5 sm:py-10" x-show="i===0" x-transition.opacity.duration.500ms>
+          <div class="w-full">
+            <div class="flex flex-wrap items-center gap-2"><p class="kicker text-xs sm:text-sm font-bold text-[#d4af37] mr-1">ເວລາກັບຈິດ · ຕອນທີ 1</p><?php echo $sciTag; ?></div>
+            <h2 class="lux-title text-3xl sm:text-5xl mt-3">“ປັດຈຸບັນ” ທີ່ເຮົາຮັບຮູ້ <span class="lux-gold">ຕ້ອງໃຊ້ເວລາ</span></h2>
+            <p class="text-white/65 mt-4 max-w-3xl text-sm sm:text-base leading-relaxed">ກວ່າເຮົາຈະຮູ້ວ່າ “ນັ້ນແມ່ນດອກໄມ້” ຕ້ອງຜ່ານຫຼາຍຂັ້ນຕອນ — ການຮັບຮູ້ <b class="text-[#f5d98b]">ບໍ່ໄດ້ເກີດຂຶ້ນລອຍໆ</b> ແຕ່ມີເຫດປັດໄຈມາກ່ອນສະເໝີ.</p>
+
+            <!-- Illustration: object → light → eye → nerves → processing → experience -->
+            <div class="sci-card rounded-[28px] p-5 sm:p-8 mt-8 rise">
+              <div class="flex flex-wrap sm:flex-nowrap items-center justify-center gap-y-4">
+                <?php $steps = [['fa-spa', 'ວັດຖຸ', 'ດອກໄມ້'], ['fa-sun', 'ແສງ', 'ສະທ້ອນຈາກດອກ'], ['fa-eye', 'ຕາ', 'ເຊວຮັບແສງ'], ['fa-wave-square', 'ລະບົບປະສາດ', 'ສົ່ງສັນຍານ'], ['fa-brain', 'ການປະມວນຜົນ', 'ສະໝອງແປຄວາມໝາຍ'], ['fa-comment-dots', 'ປະສົບການ', '“ນີ້ແມ່ນດອກໄມ້”']];
                 foreach ($steps as $k => $s): ?>
-                <div class="text-center">
-                  <div class="w-14 h-14 sm:w-20 sm:h-20 mx-auto rounded-full flex items-center justify-center text-xl sm:text-3xl <?php echo $k === 0 ? 'bg-pink-400/15 text-pink-300 ring-1 ring-pink-300/40' : ($k === 3 ? 'lux-btn' : 'bg-[#d4af37]/10 text-[#f5d98b] ring-1 ring-[#d4af37]/30'); ?>"><i class="fas <?php echo $s[0]; ?>"></i></div>
+                <div class="text-center w-1/3 sm:w-auto sm:flex-none">
+                  <div class="w-12 h-12 sm:w-16 sm:h-16 mx-auto rounded-full flex items-center justify-center text-lg sm:text-2xl <?php echo $k === 0 ? 'bg-pink-400/15 text-pink-300 ring-1 ring-pink-300/40' : ($k === 5 ? 'lux-btn' : 'bg-sky-300/10 text-sky-200 ring-1 ring-sky-300/30'); ?>"><i class="fas <?php echo $s[0]; ?>"></i></div>
                   <p class="font-bold text-xs sm:text-sm mt-2"><?php echo $s[1]; ?></p>
-                  <p class="hidden sm:block text-[11px] text-white/45"><?php echo $s[2]; ?></p>
+                  <p class="text-[10px] sm:text-[11px] text-white/45"><?php echo $s[2]; ?></p>
                 </div>
-                <?php if ($k < 3): ?>
-                <div class="relative h-1 rounded-full bg-white/10"><span class="photon" style="animation-delay:<?php echo $k * .8; ?>s"></span></div>
+                <?php if ($k < 5): ?>
+                <div class="hidden sm:block relative h-1 flex-1 min-w-[18px] rounded-full bg-white/10 mx-1"><span class="photon" style="animation-delay:<?php echo $k * .5; ?>s"></span></div>
                 <?php endif; endforeach; ?>
               </div>
               <!-- time axis -->
               <div class="mt-8 relative">
-                <div class="h-px bg-gradient-to-r from-pink-300/60 via-[#d4af37]/60 to-[#f5d98b]"></div>
+                <div class="h-px bg-gradient-to-r from-pink-300/60 via-sky-300/60 to-[#f5d98b]"></div>
                 <div class="flex justify-between text-[11px] sm:text-xs text-white/55 mt-2">
-                  <span><i class="fas fa-circle text-[6px] text-pink-300 mr-1"></i>ເຫດການເກີດຂຶ້ນ</span>
-                  <span class="text-center">ໃຊ້ເວລາ… (ເຖິງຈະໜ້ອຍຫຼາຍ)</span>
+                  <span><i class="fas fa-circle text-[6px] text-pink-300 mr-1"></i>ແສງອອກຈາກດອກໄມ້</span>
+                  <span class="text-center">ໃຊ້ເວລາ — ໜ້ອຍຫຼາຍ ແຕ່ບໍ່ແມ່ນສູນ</span>
                   <span class="text-[#f5d98b] font-bold">ເຮົາຮູ້ສຶກວ່າ “ຕອນນີ້” <i class="fas fa-circle text-[6px] ml-1"></i></span>
                 </div>
               </div>
             </div>
-            <div class="flex gap-3 items-start lux-card rounded-2xl p-4 mt-5 rise" style="animation-delay:.3s">
-              <i class="fas fa-lightbulb text-[#d4af37] mt-1"></i>
-              <p class="text-sm text-white/75 leading-relaxed">ເມື່ອເຮົາ “ຮູ້” ວ່າເປັນດອກໄມ້ ຂະນະທີ່ແສງກະທົບຕາ ໄດ້ຜ່ານໄປແລ້ວ — ສິ່ງທີ່ເຮົາເອີ້ນວ່າ “ປັດຈຸບັນ” ຈຶ່ງແມ່ນ <b class="text-[#f5d98b]">ອະດີດທີ່ຫາກໍຜ່ານໄປ</b>.</p>
+            <div class="grid sm:grid-cols-2 gap-3 mt-5">
+              <div class="flex gap-3 items-start sci-card rounded-2xl p-4 rise" style="animation-delay:.3s">
+                <i class="fas fa-check text-sky-300 mt-1"></i>
+                <p class="text-sm text-white/75 leading-relaxed">ປະສົບການທີ່ເຮົາຮັບຮູ້ວ່າເປັນ “ປັດຈຸບັນ” <b class="text-sky-200">ເກີດຈາກກະບວນການທີ່ຕ້ອງໃຊ້ເວລາ</b>.</p>
+              </div>
+              <div class="flex gap-3 items-start lux-card rounded-2xl p-4 rise" style="animation-delay:.4s">
+                <i class="fas fa-triangle-exclamation text-[#d4af37] mt-1"></i>
+                <p class="text-sm text-white/75 leading-relaxed">ແຕ່ <b class="text-[#f5d98b]">ບໍ່ໄດ້ໝາຍຄວາມວ່າ ປັດຈຸບັນບໍ່ມີຢູ່ແທ້</b> — ນັ້ນເປັນຄຳຖາມທາງປັດຊະຍາ ທີ່ຊວນໃຫ້ພິຈາລະນາ ບໍ່ແມ່ນສິ່ງທີ່ວິທະຍາສາດພິສູດ.</p>
+              </div>
             </div>
           </div>
         </div>
 
         <!-- 5. Starlight -->
-        <div class="slide flex px-6 sm:px-16 py-8 sm:py-10" x-show="i===1" x-transition.opacity.duration.500ms>
+        <div class="slide flex px-4 sm:px-16 py-5 sm:py-10" x-show="i===1" x-transition.opacity.duration.500ms>
           <div class="w-full">
-            <p class="kicker text-xs sm:text-sm font-bold text-[#d4af37]">ເວລາກັບຈິດ · ຕອນທີ 2</p>
-            <h2 class="lux-title text-3xl sm:text-5xl mt-3">ທິດສະດີ <span class="lux-gold">ແສງຂອງດວງດາວ</span></h2>
-            <p class="text-white/65 mt-4 max-w-3xl text-sm sm:text-base leading-relaxed">ແສງດາວທີ່ເຮົາເຫັນໃນຄືນນີ້ ແມ່ນ <b class="text-[#f5d98b]">ອະດີດຂອງດວງດາວ</b> — ແສງໄດ້ເດີນທາງມາຫຼາຍປີ, ຮອດຕອນທີ່ເຮົາເຫັນ ດາວດວງນັ້ນ <b class="text-[#f5d98b]">ອາດຈະດັບໄປແລ້ວ</b>.</p>
+            <div class="flex flex-wrap items-center gap-2"><p class="kicker text-xs sm:text-sm font-bold text-[#d4af37] mr-1">ເວລາກັບຈິດ · ຕອນທີ 2</p><?php echo $sciTag; ?></div>
+            <h2 class="lux-title text-3xl sm:text-5xl mt-3">ແນມທ້ອງຟ້າ = <span class="lux-gold">ຮັບຂໍ້ມູນຈາກອະດີດ</span></h2>
+            <p class="text-white/65 mt-4 max-w-3xl text-sm sm:text-base leading-relaxed">ແສງມີຄວາມໄວຈຳກັດ ຈຶ່ງຕ້ອງໃຊ້ເວລາເດີນທາງ — <b class="text-sky-200">ຍິ່ງວັດຖຸຢູ່ໄກ ເຮົາກໍຍິ່ງແນມຍ້ອນກັບໄປໄກໃນອະດີດ</b>.</p>
 
-            <!-- Illustration: star → long journey of light → eye on earth -->
-            <div class="lux-card rounded-[28px] p-5 sm:p-8 mt-8 rise">
-              <svg viewBox="0 0 800 220" class="w-full h-auto" role="img" aria-label="ແສງຈາກດາວເດີນທາງມາຮອດຕາເຮົາ">
-                <defs>
-                  <radialGradient id="starGlow"><stop offset="0%" stop-color="#fff7d6"/><stop offset="40%" stop-color="#f5d98b"/><stop offset="100%" stop-color="#d4af37" stop-opacity="0"/></radialGradient>
-                  <linearGradient id="beam" x1="0" x2="1"><stop offset="0%" stop-color="#f5d98b" stop-opacity=".9"/><stop offset="100%" stop-color="#f5d98b" stop-opacity=".15"/></linearGradient>
-                </defs>
-                <!-- star -->
-                <g class="dying-star">
-                  <circle cx="90" cy="100" r="60" fill="url(#starGlow)"/>
-                  <path d="M90 62 L99 91 L129 91 L105 108 L114 137 L90 120 L66 137 L75 108 L51 91 L81 91 Z" fill="#fff3c4"/>
-                </g>
-                <!-- light path -->
-                <line x1="160" y1="100" x2="640" y2="100" stroke="url(#beam)" stroke-width="2" stroke-dasharray="6 10"/>
-                <circle cy="100" r="6" fill="#fff3c4"><animate attributeName="cx" from="160" to="640" dur="3s" repeatCount="indefinite"/></circle>
-                <circle cy="100" r="6" fill="#fff3c4"><animate attributeName="cx" from="160" to="640" dur="3s" begin="1s" repeatCount="indefinite"/></circle>
-                <circle cy="100" r="6" fill="#fff3c4"><animate attributeName="cx" from="160" to="640" dur="3s" begin="2s" repeatCount="indefinite"/></circle>
-                <!-- eye -->
-                <g transform="translate(700 100)">
-                  <path d="M-50 0 Q0 -40 50 0 Q0 40 -50 0 Z" fill="none" stroke="#f5d98b" stroke-width="3"/>
-                  <circle r="15" fill="#d4af37"/><circle r="6" fill="#0b0d17"/>
-                </g>
-                <text x="90" y="200" text-anchor="middle" fill="#f5d98b" font-size="16" font-weight="700">ດາວ (ອາດດັບໄປແລ້ວ)</text>
-                <text x="400" y="80" text-anchor="middle" fill="#ffffff" fill-opacity=".6" font-size="15">ແສງເດີນທາງ ຫຼາຍພັນປີ…</text>
-                <text x="700" y="200" text-anchor="middle" fill="#f5d98b" font-size="16" font-weight="700">ເຮົາເຫັນ “ຕອນນີ້”</text>
-              </svg>
-            </div>
-            <div class="grid sm:grid-cols-3 gap-3 mt-5">
-              <?php foreach ([['fa-star', 'ດາວສ່ອງແສງ', 'ເຫດການເກີດຂຶ້ນໃນອະດີດ'], ['fa-route', 'ແສງເດີນທາງມາ', 'ໃຊ້ເວລາກວ່າຈະມາຮອດ'], ['fa-eye', 'ເຮົາເຫັນແສງ', 'ແຕ່ຄິດວ່າເປັນ “ປັດຈຸບັນ”']] as $k => $c): ?>
-              <div class="flex gap-3 items-start lux-card rounded-2xl p-4 rise" style="animation-delay:<?php echo .2 + $k * .1; ?>s">
-                <i class="fas <?php echo $c[0]; ?> text-[#d4af37] mt-1"></i>
-                <div><p class="font-bold text-sm"><?php echo $c[1]; ?></p><p class="text-xs text-white/55"><?php echo $c[2]; ?></p></div>
+            <div class="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,2.2fr)] gap-4 mt-6">
+              <!-- Big number: speed of light -->
+              <div class="sci-card rounded-[28px] p-5 sm:p-6 rise">
+                <p class="text-xs font-bold text-sky-300"><i class="fas fa-bolt mr-1.5"></i>ຄວາມໄວແສງ (ໃນສູນຍາກາດ)</p>
+                <p class="sci-num text-3xl sm:text-4xl font-black mt-2">299,792 <span class="text-base sm:text-lg text-sky-200/80">km/s</span></p>
+                <p class="text-sm text-white/60 mt-1">ປັດເປັນ <b class="text-sky-200">≈ 300,000 km ຕໍ່ວິນາທີ</b></p>
+                <p class="text-xs text-white/45 mt-3">ໄວຫຼາຍ — ແຕ່ <b class="text-white/70">ບໍ່ແມ່ນທັນທີ</b>.</p>
               </div>
-              <?php endforeach; ?>
+
+              <!-- Distance timeline: Earth ← Moon ← Sun ← Proxima Centauri (not to scale) -->
+              <div class="sci-card rounded-[28px] p-4 sm:p-6 rise" style="animation-delay:.1s">
+                <!-- Phones: the same three distances as a readable list, light arriving at Earth at the bottom -->
+                <div class="sm:hidden space-y-2">
+                  <?php foreach ([['Proxima Centauri', '≈ 4.24 ປີແສງ', '4.24 ປີ', 'bg-red-300 shadow-[0_0_12px_#f87171]'], ['ດວງອາທິດ', '≈ 149.6 ລ້ານ km', '8 ນາທີ 20 ວິ', 'bg-amber-200 shadow-[0_0_12px_#f5d98b]'], ['ດວງຈັນ', '≈ 384,400 km', '1.3 ວິນາທີ', 'bg-gray-300']] as $o): ?>
+                  <div class="flex items-center gap-3 rounded-2xl bg-white/[.04] px-3 py-2.5">
+                    <span class="w-3.5 h-3.5 rounded-full shrink-0 <?php echo $o[3]; ?>"></span>
+                    <div class="min-w-0 flex-1"><p class="font-bold text-sm"><?php echo $o[0]; ?></p><p class="text-[11px] text-white/50"><?php echo $o[1]; ?></p></div>
+                    <p class="sci-num font-black text-base whitespace-nowrap"><?php echo $o[2]; ?></p>
+                  </div>
+                  <?php endforeach; ?>
+                  <p class="text-center text-[11px] text-sky-300/80"><i class="fas fa-arrow-down mr-1"></i>ເວລາທີ່ແສງໃຊ້ ເດີນທາງມາຮອດ <b>ໂລກ</b> <i class="fas fa-earth-asia ml-1"></i></p>
+                </div>
+                <svg viewBox="0 0 800 210" class="hidden sm:block w-full h-auto" role="img" aria-label="ເວລາທີ່ແສງໃຊ້ເດີນທາງມາຮອດໂລກ: ດວງຈັນ 1.3 ວິນາທີ, ດວງອາທິດ 8 ນາທີ 20 ວິນາທີ, Proxima Centauri 4.24 ປີ">
+                  <defs>
+                    <radialGradient id="sunGlow"><stop offset="0%" stop-color="#fff7d6"/><stop offset="45%" stop-color="#f5d98b"/><stop offset="100%" stop-color="#d4af37" stop-opacity="0"/></radialGradient>
+                    <radialGradient id="redGlow"><stop offset="0%" stop-color="#ffd2c2"/><stop offset="45%" stop-color="#f87171"/><stop offset="100%" stop-color="#f87171" stop-opacity="0"/></radialGradient>
+                  </defs>
+                  <line x1="70" y1="95" x2="740" y2="95" stroke="rgba(125,211,252,.35)" stroke-width="2" stroke-dasharray="4 8"/>
+                  <!-- scale breaks: not drawn to scale -->
+                  <?php foreach ([340, 560] as $bx): ?>
+                  <path d="M<?php echo $bx - 6; ?> 84 l8 22 M<?php echo $bx + 2; ?> 84 l8 22" stroke="#7dd3fc" stroke-width="2"/>
+                  <?php endforeach; ?>
+                  <!-- light arriving at Earth -->
+                  <?php foreach ([0, 1.2, 2.4] as $d): ?>
+                  <circle cy="95" r="4" fill="#fff3c4" opacity=".9"><animate attributeName="cx" from="740" to="90" dur="3.6s" begin="<?php echo $d; ?>s" repeatCount="indefinite"/></circle>
+                  <?php endforeach; ?>
+                  <!-- Earth -->
+                  <circle cx="60" cy="95" r="22" fill="#1d4ed8"/><path d="M46 86 q8 -6 14 2 q6 8 14 2 M44 100 q10 4 16 -2 q8 -4 16 4" stroke="#4ade80" stroke-width="4" fill="none" stroke-linecap="round"/>
+                  <text x="60" y="140" text-anchor="middle" fill="#bae6fd" font-size="15" font-weight="800">ໂລກ</text>
+                  <!-- Moon -->
+                  <circle cx="210" cy="95" r="11" fill="#d1d5db"/><circle cx="206" cy="91" r="2.5" fill="#9ca3af"/>
+                  <text x="210" y="45" text-anchor="middle" fill="#fff" font-size="14" font-weight="700">ດວງຈັນ</text>
+                  <text x="210" y="62" text-anchor="middle" fill="#ffffff88" font-size="11">≈ 384,400 km</text>
+                  <text x="210" y="140" text-anchor="middle" fill="#e0f2fe" font-size="20" font-weight="900">1.3 ວິນາທີ</text>
+                  <!-- Sun -->
+                  <circle cx="450" cy="95" r="32" fill="url(#sunGlow)"/><circle cx="450" cy="95" r="15" fill="#fde68a"/>
+                  <text x="450" y="45" text-anchor="middle" fill="#fff" font-size="14" font-weight="700">ດວງອາທິດ</text>
+                  <text x="450" y="62" text-anchor="middle" fill="#ffffff88" font-size="11">≈ 149.6 ລ້ານ km</text>
+                  <text x="450" y="148" text-anchor="middle" fill="#e0f2fe" font-size="20" font-weight="900">8 ນາທີ 20 ວິນາທີ</text>
+                  <!-- Proxima Centauri -->
+                  <circle cx="710" cy="95" r="26" fill="url(#redGlow)"/><circle cx="710" cy="95" r="8" fill="#fecaca"/>
+                  <text x="710" y="45" text-anchor="middle" fill="#fff" font-size="14" font-weight="700">Proxima Centauri</text>
+                  <text x="710" y="62" text-anchor="middle" fill="#ffffff88" font-size="11">≈ 4.24 ປີແສງ</text>
+                  <text x="710" y="148" text-anchor="middle" fill="#e0f2fe" font-size="20" font-weight="900">4.24 ປີ</text>
+                  <text x="400" y="196" text-anchor="middle" fill="#7dd3fcaa" font-size="12">← ເວລາທີ່ແສງໃຊ້ ເດີນທາງມາຮອດໂລກ (ແຜນພາບບໍ່ໄດ້ຕາມມາດຕາສ່ວນ)</text>
+                </svg>
+              </div>
             </div>
+
+            <div class="grid md:grid-cols-2 gap-3 mt-4">
+              <!-- Light-year is a distance -->
+              <div class="sci-card rounded-2xl p-4 rise" style="animation-delay:.2s">
+                <p class="font-bold text-sm sm:text-base"><i class="fas fa-ruler-horizontal text-sky-300 mr-2"></i>“ປີແສງ” ແມ່ນ <span class="text-sky-200">ໜ່ວຍໄລຍະທາງ</span> ບໍ່ແມ່ນໜ່ວຍເວລາ</p>
+                <p class="text-xs sm:text-sm text-white/60 mt-1.5">= ໄລຍະທາງທີ່ແສງເດີນທາງໄດ້ໃນ 1 ປີ (≈ 9.46 ລ້ານລ້ານ km). Proxima ຢູ່ຫ່າງ 4.24 ປີແສງ → ແສງໃຊ້ເວລາ ≈ 4.24 ປີ ມາຮອດເຮົາ. ດາວທີ່ຢູ່ຫ່າງ 100 ປີແສງ → ແສງທີ່ເຮົາໄດ້ຮັບມື້ນີ້ ອອກຈາກດາວ ≈ 100 ປີກ່ອນ.</p>
+              </div>
+              <!-- Correct the "dead star" misconception -->
+              <div class="lux-card rounded-2xl p-4 rise" style="animation-delay:.3s">
+                <p class="font-bold text-sm sm:text-base"><i class="fas fa-star-half-stroke text-[#d4af37] mr-2"></i>ເຮົາເຫັນດາວ <span class="text-[#f5d98b]">ໃນສະພາບທີ່ແສງອອກເດີນທາງມາ</span></p>
+                <p class="text-xs sm:text-sm text-white/60 mt-1.5">ບໍ່ແມ່ນສະພາບແບບສົດໆ ໃນຕອນນີ້. ດາວ <b class="text-white/80">ອາດ</b> ປ່ຽນແປງໄປແລ້ວ ຫຼັງແສງອອກເດີນທາງ — ແຕ່ <b class="text-[#f5d98b]">ເຮົາສະຫຼຸບບໍ່ໄດ້ວ່າດາວດັບແລ້ວ</b> ພຽງເພາະເຫັນແສງຈາກອະດີດ.</p>
+              </div>
+            </div>
+            <p class="src mt-4"><i class="fas fa-book-open mr-1"></i>ແຫຼ່ງອ້າງອີງ (ວິທະຍາສາດ):
+              <a href="https://science.nasa.gov/exoplanets/what-is-a-light-year/" target="_blank" rel="noopener">NASA — What is a light-year?</a> ·
+              <a href="https://science.nasa.gov/mission/webb/science-overview/science-explainers/how-does-webb-see-back-in-time/" target="_blank" rel="noopener">NASA — How Does Webb See Back in Time?</a> ·
+              <a href="https://science.nasa.gov/moon/facts/" target="_blank" rel="noopener">NASA — Moon facts</a> ·
+              <a href="https://science.nasa.gov/sun/facts/" target="_blank" rel="noopener">NASA — Sun facts</a> ·
+              <a href="https://apod.nasa.gov/apod/ap160118.html" target="_blank" rel="noopener">NASA APOD — Proxima Centauri</a> ·
+              <a href="https://physics.nist.gov/cgi-bin/cuu/Value?c" target="_blank" rel="noopener">NIST — speed of light</a></p>
           </div>
         </div>
 
         <!-- 6. Starlight ↔ mind -->
-        <div class="slide flex px-6 sm:px-16 py-8 sm:py-10" x-show="i===2" x-transition.opacity.duration.500ms>
+        <div class="slide flex px-4 sm:px-16 py-5 sm:py-10" x-show="i===2" x-transition.opacity.duration.500ms>
           <div class="w-full">
-            <p class="kicker text-xs sm:text-sm font-bold text-[#d4af37]">ເວລາກັບຈິດ · ຕອນທີ 3</p>
-            <h2 class="lux-title text-3xl sm:text-5xl mt-3">ປຽບ <span class="lux-gold">ແສງດາວ</span> ກັບ <span class="lux-gold">ການຮັບຮູ້ຂອງຈິດ</span></h2>
-            <div class="space-y-3 mt-8">
+            <div class="flex flex-wrap items-center gap-2"><p class="kicker text-xs sm:text-sm font-bold text-[#d4af37] mr-1">ເວລາກັບຈິດ · ຕອນທີ 3</p><?php echo $sciTag; ?><i class="fas fa-arrow-right-long text-white/40"></i><?php echo $dharmaTag; ?></div>
+            <h2 class="lux-title text-2xl sm:text-4xl mt-3 leading-snug">ຖ້າແສງທີ່ເຮົາເຫັນ ມີເຫດປັດໄຈ ແລະ ການເດີນທາງມາກ່ອນ<br><span class="lux-gold">ແລ້ວປະສົບການທາງໃຈຂອງເຮົາເດ?</span></h2>
+            <p class="text-white/65 mt-3 max-w-3xl text-sm sm:text-base">ເລື່ອງແສງດາວ ໃຊ້ເປັນ <b class="text-[#f5d98b]">ອຸປະມາ</b> ເພື່ອຊວນພິຈາລະນາທຳມະຊາດຂອງການຮັບຮູ້ — ບໍ່ແມ່ນບອກວ່າຈິດເຮັດວຽກຄືແສງ.</p>
+            <!-- Analogy table: science fact on the left, dharma reflection on the right -->
+            <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-x-3 sm:gap-x-5 gap-y-3 mt-6">
+              <span class="layer layer-sci justify-self-start"><i class="fas fa-flask"></i>ແສງດາວ</span><span></span><span class="layer layer-dharma justify-self-start"><i class="fas fa-dharmachakra"></i>ການຮັບຮູ້ຂອງຈິດ</span>
               <?php foreach ([
-                ['fa-star-half-stroke', 'ດາວທີ່ດັບໄປແລ້ວ', 'fa-clock-rotate-left', 'ສິ່ງທີ່ເກີດຂຶ້ນໃນອະດີດ'],
-                ['fa-wand-sparkles', 'ແສງທີ່ເດີນທາງມາຮອດຕາເຮົາ', 'fa-hourglass-half', 'ສິ່ງທີ່ປາກົດໃຫ້ເຮົາຮັບຮູ້ໃນປັດຈຸບັນ'],
-                ['fa-eye', 'ການເຫັນ', 'fa-brain', 'ການຮັບຮູ້ ຫຼື ວິນຍານ'],
-                ['fa-eye-slash', 'ບໍ່ເຫັນກະບວນການຕາມຄວາມເປັນຈິງ', 'fa-cloud', '“ອະວິຊາ” (ຄວາມບໍ່ຮູ້ແຈ້ງ)'],
+                ['fa-star', 'ດາວ ຕອນແສງອອກເດີນທາງ', 'fa-diagram-project', 'ເຫດປັດໄຈ ທີ່ມີມາກ່ອນ'],
+                ['fa-route', 'ແສງເດີນທາງມາຮອດຕາ', 'fa-hourglass-half', 'ສິ່ງທີ່ປາກົດໃຫ້ຮັບຮູ້ ຕອນນີ້'],
+                ['fa-eye', 'ເຫັນແສງ — ບໍ່ເຫັນດາວໂດຍກົງ', 'fa-brain', 'ການຮັບຮູ້ (ວິນຍານ) ຜ່ານຂັ້ນຕອນ'],
+                ['fa-eye-slash', 'ບໍ່ເຫັນທາງທີ່ແສງເດີນທາງມາ', 'fa-cloud', 'ບໍ່ເຫັນເຫດປັດໄຈ (ອະວິຊາ)'],
               ] as $k => $m): ?>
-              <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-3 sm:gap-5 rise" style="animation-delay:<?php echo $k * .12; ?>s">
-                <div class="lux-card rounded-2xl p-3 sm:p-4 flex items-center gap-3"><i class="fas <?php echo $m[0]; ?> text-[#f5d98b] w-5 text-center"></i><span class="font-bold text-xs sm:text-base"><?php echo $m[1]; ?></span></div>
-                <i class="fas fa-arrow-right-long text-[#d4af37]"></i>
-                <div class="rounded-2xl p-3 sm:p-4 flex items-center gap-3 bg-[#d4af37]/10 border border-[#d4af37]/35"><i class="fas <?php echo $m[2]; ?> text-[#f5d98b] w-5 text-center"></i><span class="font-bold text-xs sm:text-base"><?php echo $m[3]; ?></span></div>
-              </div>
+              <div class="sci-card rounded-2xl p-3 sm:p-4 flex items-center gap-3 rise" style="animation-delay:<?php echo $k * .12; ?>s"><i class="fas <?php echo $m[0]; ?> text-sky-300 w-5 text-center"></i><span class="font-bold text-xs sm:text-base"><?php echo $m[1]; ?></span></div>
+              <span class="text-[10px] sm:text-xs text-white/40 text-center">ປຽບ<br>ເໝືອນ</span>
+              <div class="rounded-2xl p-3 sm:p-4 flex items-center gap-3 bg-[#d4af37]/10 border border-dashed border-[#d4af37]/45 rise" style="animation-delay:<?php echo $k * .12; ?>s"><i class="fas <?php echo $m[2]; ?> text-[#f5d98b] w-5 text-center"></i><span class="font-bold text-xs sm:text-base"><?php echo $m[3]; ?></span></div>
               <?php endforeach; ?>
             </div>
-            <div class="lux-card rounded-3xl p-5 sm:p-6 mt-6 rise" style="animation-delay:.5s">
-              <p class="text-sm text-white/65">ແລະເມື່ອຈິດໄປຕີຄວາມຕໍ່ວ່າ</p>
-              <p class="lux-gold text-xl sm:text-3xl font-black mt-2 leading-snug">“ນີ້ແມ່ນເຮົາ, ນີ້ແມ່ນຕົວເຮົາ, ນີ້ແມ່ນຕົວຕົນຂອງເຮົາ”</p>
-              <p class="text-sm sm:text-base text-white/75 mt-3">ກໍເປັນຈຸດທີ່ຈິດເລີ່ມ <b class="text-[#f5d98b]">ປຸງແຕ່ງ</b> ແລະ <b class="text-[#f5d98b]">ຍຶດຖື</b>.</p>
+            <div class="grid md:grid-cols-2 gap-3 mt-5">
+              <!-- Everyday example: what is seen vs. what the mind adds -->
+              <div class="lux-card rounded-3xl p-4 sm:p-5 rise" style="animation-delay:.5s">
+                <p class="text-xs font-bold text-[#d4af37]"><i class="fas fa-person-walking mr-1.5"></i>ຕົວຢ່າງ: ມີຄົນຍ່າງຜ່ານ ບໍ່ທັກເຮົາ</p>
+                <div class="flex flex-wrap items-center gap-2 mt-3 text-xs sm:text-sm font-bold">
+                  <span class="px-3 py-1.5 rounded-full bg-white/10">ເຫັນ: ເຂົາຍ່າງຜ່ານ</span><i class="fas fa-arrow-right text-[#d4af37]"></i>
+                  <span class="px-3 py-1.5 rounded-full bg-[#d4af37]/15 text-[#f5d98b]">ຈິດເຕີມ: “ເຂົາບໍ່ມັກເຮົາ”</span>
+                </div>
+                <p class="text-xs text-white/55 mt-3">ສິ່ງທີ່ເຫັນ ກັບ ຄວາມໝາຍທີ່ຈິດຕີຄວາມເພີ່ມ — ບໍ່ແມ່ນສິ່ງດຽວກັນ. ເມື່ອຕີຄວາມຕໍ່ວ່າ “ນີ້ແມ່ນເຮົາ ທີ່ຖືກດູຖູກ” ຈິດກໍເລີ່ມ <b class="text-[#f5d98b]">ປຸງແຕ່ງ</b> ແລະ <b class="text-[#f5d98b]">ຍຶດຖື</b>.</p>
+              </div>
+              <div class="rounded-3xl p-4 sm:p-5 border border-white/15 bg-white/[.03] rise" style="animation-delay:.6s">
+                <p class="text-sm sm:text-base text-white/85 leading-relaxed">“ວິທະຍາສາດ ອະທິບາຍວ່າແສງຈາກດາວ <b class="text-sky-200">ເດີນທາງມາຫາເຮົາແນວໃດ</b> — ສ່ວນທຳມະ ຊວນເຮົາພິຈາລະນາວ່າ ປະສົບການ ແລະ ຄວາມທຸກ <b class="text-[#f5d98b]">ເກີດຈາກເຫດປັດໄຈແນວໃດ</b>.”</p>
+                <p class="text-xs sm:text-sm text-white/55 mt-2"><i class="fas fa-circle-info text-[#d4af37] mr-1"></i>ເຮົາບໍ່ໄດ້ບອກວ່າສອງສິ່ງນີ້ເຮັດວຽກຄືກັນ — ແສງເປັນເລື່ອງຟີຊິກ, ການຮັບຮູ້ເປັນເລື່ອງຊີວະວິທະຍາ ແລະ ຈິດ. ເຮົາໃຊ້ເລື່ອງໜຶ່ງເປັນອຸປະມາ ເພື່ອຊ່ວຍໃຫ້ເຫັນອີກເລື່ອງໜຶ່ງ.</p>
+              </div>
             </div>
           </div>
         </div>
 
         <!-- 7. Mind arises and ceases every moment -->
-        <div class="slide flex px-6 sm:px-16 py-8 sm:py-10" x-show="i===3" x-transition.opacity.duration.500ms>
+        <div class="slide flex px-4 sm:px-16 py-5 sm:py-10" x-show="i===3" x-transition.opacity.duration.500ms>
           <div class="w-full">
-            <p class="kicker text-xs sm:text-sm font-bold text-[#d4af37]">ເວລາກັບຈິດ · ຕອນທີ 4</p>
+            <div class="flex flex-wrap items-center gap-2"><p class="kicker text-xs sm:text-sm font-bold text-[#d4af37] mr-1">ເວລາກັບຈິດ · ຕອນທີ 4</p><?php echo $dharmaTag; ?></div>
             <h2 class="lux-title text-3xl sm:text-5xl mt-3">ຈິດ <span class="lux-gold">ເກີດ ແລະ ດັບ</span> ທຸກຂະນະ</h2>
-            <p class="text-white/65 mt-4 max-w-3xl text-sm sm:text-base leading-relaxed">ລອງປ່ຽນ “ແສງຈາກດາວທີ່ດັບໄປ” ມາເປັນຈິດໃຈເຮົາ: ຕອນທີ່ເຮົາບໍ່ເຫັນຕາມຄວາມເປັນຈິງ (ມີອະວິຊາ) ວ່າຈິດທີ່ຮັບຮູ້ “ປັດຈຸບັນ” ໄດ້ດັບໄປແລ້ວ — ມັນກໍຈະເບິ່ງຄືມີຕົວຕົນ ມີ “ເຮົາ” ເປັນຜູ້ຄິດ ທັງໆທີ່ມັນເກີດ ແລະ ດັບໄປທຸກສ່ຽວວິນາທີ.</p>
+            <p class="text-white/65 mt-4 max-w-3xl text-sm sm:text-base leading-relaxed">ເຫັນຂໍ້ຄວາມໃນໂທລະສັບ → ດີໃຈ · ນຶກເຖິງອີກ → ດີໃຈອີກ · ນຶກເລື່ອງອື່ນ → ຮູ້ສຶກແບບໃໝ່. ຄວາມຮູ້ສຶກ ຄວາມຄິດ ແລະ ການຮັບຮູ້ <b class="text-[#f5d98b]">ປ່ຽນແປງຢູ່ສະເໝີ</b> — ແຕ່ເມື່ອບໍ່ເຫັນຕາມຈິງ (ອະວິຊາ) ມັນກໍເບິ່ງຄືມີ “ເຮົາ” ຄົນດຽວ ຕໍ່ເນື່ອງຕະຫຼອດ.</p>
 
             <div class="grid lg:grid-cols-2 gap-4 sm:gap-5 mt-8">
               <!-- What really happens -->
@@ -270,24 +337,31 @@
                 <p class="text-xs text-white/55 mt-4">ເໝືອນຮູບເງົາ: ພາບນິ່ງຫຼາຍພາບສາຍຕໍ່ກັນໄວໆ ຈົນເບິ່ງຄືເປັນສິ່ງດຽວທີ່ເຄື່ອນໄຫວ.</p>
               </div>
             </div>
+            <p class="text-xs text-white/45 mt-4 max-w-4xl"><i class="fas fa-circle-info text-[#d4af37] mr-1.5"></i>ການເກີດ-ດັບຂອງຈິດ ເປັນຄຳອະທິບາຍທາງພຸດທະທຳ (ອະນິດຈັງ) — ການປະມວນຜົນຂອງສະໝອງ ເປັນເລື່ອງທີ່ວິທະຍາສາດສຶກສາຕ່າງຫາກ. ທັງສອງກ່ຽວກັບການປ່ຽນແປງ ແຕ່ບໍ່ຄວນຖືວ່າເປັນສິ່ງດຽວກັນ.</p>
           </div>
         </div>
 
         <!-- 8. Five aggregates & the dead star -->
-        <div class="slide flex px-6 sm:px-16 py-8 sm:py-10" x-show="i===4" x-transition.opacity.duration.500ms>
+        <div class="slide flex px-4 sm:px-16 py-5 sm:py-10" x-show="i===4" x-transition.opacity.duration.500ms>
           <div class="w-full">
-            <p class="kicker text-xs sm:text-sm font-bold text-[#d4af37]">ເວລາກັບຈິດ · ຕອນທີ 5</p>
-            <h2 class="lux-title text-3xl sm:text-5xl mt-3">ຂັນ 5 <span class="lux-gold">ກັບ ແສງດາວທີ່ດັບແລ້ວ</span></h2>
-            <div class="rounded-3xl p-5 sm:p-6 mt-6 bg-amber-400/10 border border-amber-300/40 flex gap-4 items-start rise">
-              <i class="fas fa-star text-amber-300 text-xl mt-0.5"></i>
-              <div class="text-sm sm:text-base text-white/85 leading-relaxed space-y-3">
-                <p>ດາວບາງດວງ <b>ດັບໄປແລ້ວ</b> ກາຍເປັນອະດີດ ແຕ່ເຮົາຍັງເຫັນ <b>ລຳແສງ</b> ຂອງມັນຢູ່ໃນປັດຈຸບັນ — <b>“ຈິດດວງກ່ອນ”</b> ກໍເຊັ່ນກັນ: ເກີດຂຶ້ນ ແລ້ວດັບໄປ ສະຫຼາຍເປັນອະດີດແລ້ວ.</p>
-                <p>ແຕ່ສິ່ງທີ່ເຮົາຍັງເຫັນ ແລະ ຮູ້ສຶກຢູ່ ແມ່ນອາໄສ <b>ຂັນທັງ 5</b> ສະແດງຜົນໃຫ້ປາກົດ. ໂດຍສະເພາະ <b class="text-amber-200">ສັງຂານຂັນ</b> — ຄວາມປຸງແຕ່ງ ແລະ ຄວາມຈື່ຈຳ — ເຖິງຈິດດວງນັ້ນຈະດັບໄປແລ້ວ ກໍຍັງເຮັດໜ້າທີ່ປຸງແຕ່ງຜົນຂອງອະດີດ ໃຫ້ເຮົາເຫັນ ແລະ ຮູ້ສຶກຢູ່ໃນປັດຈຸບັນ <b>ເໝືອນລຳແສງທີ່ເດີນທາງມາໃຫ້ເຫັນ</b>.</p>
-                <div class="flex flex-wrap gap-2 pt-1">
-                  <?php foreach (['ຮູບ', 'ເວທະນາ', 'ສັນຍາ', 'ສັງຂານ', 'ວິນຍານ'] as $kh): ?>
-                  <span class="px-3 py-1 rounded-full text-xs sm:text-sm font-bold border <?php echo $kh === 'ສັງຂານ' ? 'bg-amber-300/25 border-amber-300 text-amber-100' : 'bg-white/5 border-white/20 text-white/80'; ?>"><?php echo $kh; ?></span>
-                  <?php endforeach; ?>
-                </div>
+            <div class="flex flex-wrap items-center gap-2"><p class="kicker text-xs sm:text-sm font-bold text-[#d4af37] mr-1">ເວລາກັບຈິດ · ຕອນທີ 5</p><?php echo $dharmaTag; ?></div>
+            <h2 class="lux-title text-3xl sm:text-5xl mt-3">ຂັນ 5 <span class="lux-gold">ກັບ ອຸປະມາແສງດາວ</span></h2>
+            <p class="text-white/65 mt-3 max-w-3xl text-sm sm:text-base">ຕົວຢ່າງ: <b class="text-[#f5d98b]">ເຫັນໂທລະສັບລຸ້ນໃໝ່</b> — ປະສົບການດຽວ ແຍກເບິ່ງໄດ້ເປັນ 5 ກອງ:</p>
+            <!-- One experience, five aggregates -->
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-3 mt-4">
+              <?php foreach ([['fa-mobile-screen', 'ຮູບ', 'ໂທລະສັບ ແລະ ຮ່າງກາຍ ທີ່ເຫັນ'], ['fa-heart', 'ເວທະນາ', 'ຮູ້ສຶກພໍໃຈ'], ['fa-tag', 'ສັນຍາ', 'ຈຳໄດ້ວ່າ “ຍີ່ຫໍ້ທີ່ມັກ”'], ['fa-gears', 'ສັງຂານ', 'ຄິດ “ຊື້ດີບໍ່?” ເຈດຕະນາເກີດ'], ['fa-eye', 'ວິນຍານ', 'ການຮັບຮູ້ທາງຕາ']] as $k => $kh): ?>
+              <div class="rounded-2xl p-3 sm:p-4 border text-center rise <?php echo $kh[1] === 'ສັງຂານ' ? 'bg-amber-300/15 border-amber-300/60' : 'bg-white/5 border-white/15'; ?>" style="animation-delay:<?php echo $k * .08; ?>s">
+                <i class="fas <?php echo $kh[0]; ?> text-[#f5d98b] text-lg"></i>
+                <p class="font-black text-sm sm:text-base mt-1.5"><?php echo $kh[1]; ?></p>
+                <p class="text-[11px] sm:text-xs text-white/55 mt-0.5"><?php echo $kh[2]; ?></p>
+              </div>
+              <?php endforeach; ?>
+            </div>
+            <div class="rounded-3xl p-4 sm:p-5 mt-4 bg-amber-400/10 border border-dashed border-amber-300/40 flex gap-4 items-start rise" style="animation-delay:.4s">
+              <i class="fas fa-clock-rotate-left text-amber-300 text-xl mt-0.5"></i>
+              <div class="text-sm sm:text-base text-white/85 leading-relaxed">
+                <p>ເຄີຍຊື້ໂທລະສັບຍີ່ຫໍ້ນີ້ ແລ້ວຜິດຫວັງ → ເຫັນອີກເທື່ອ ກໍ <b>ບໍ່ມັກຂຶ້ນມາທັນທີ</b>. ປະສົບການທີ່ຜ່ານໄປແລ້ວ ຍັງ <b class="text-amber-200">ເປັນເງື່ອນໄຂ</b> ໃຫ້ຄວາມຄິດ ແລະ ຄວາມຮູ້ສຶກຕອນນີ້ — ຄ້າຍແສງທີ່ອອກເດີນທາງໃນອະດີດ ແຕ່ມາຮອດເຮົາຕອນນີ້.</p>
+                <p class="text-xs sm:text-sm text-white/55 mt-2"><i class="fas fa-triangle-exclamation text-amber-300 mr-1"></i>ນີ້ເປັນພຽງອຸປະມາ: ບໍ່ແມ່ນ “ຈິດດວງເກົ່າ” ທີ່ເດີນທາງມາຈາກອະດີດຄືລຳແສງ — ແຕ່ແມ່ນເຫດປັດໄຈເກົ່າ (ຄວາມຈຳ, ນິໄສ) ທີ່ສົ່ງຜົນຕໍ່ປັດຈຸບັນ.</p>
               </div>
             </div>
             <p class="font-bold text-base sm:text-lg mt-8">ສິ່ງທີ່ອຸປະມານີ້ຊ່ວຍໃຫ້ເຫັນຊັດ:</p>
@@ -317,11 +391,15 @@
           'future' => ['ອະນາຄົດຜົນ', '#c4b5fd'],
         ]; ?>
         <!-- 9. Paticcasamuppada clock -->
-        <div class="slide flex px-6 sm:px-16 py-8 sm:py-10" x-show="i===5" x-transition.opacity.duration.500ms>
+        <div class="slide flex px-4 sm:px-16 py-5 sm:py-10" x-show="i===5" x-transition.opacity.duration.500ms>
           <div class="w-full">
-            <p class="kicker text-xs sm:text-sm font-bold text-[#d4af37]">ເວລາກັບຈິດ · ຕອນທີ 6</p>
+            <div class="flex flex-wrap items-center gap-2"><p class="kicker text-xs sm:text-sm font-bold text-[#d4af37] mr-1">ເວລາກັບຈິດ · ຕອນທີ 6</p><?php echo $dharmaTag; ?></div>
             <h2 class="lux-title text-3xl sm:text-5xl mt-3">ໂມງ <span class="lux-gold">ປະຕິຈຈະສະມຸບບາດ</span></h2>
-            <p class="text-white/65 mt-3 max-w-3xl text-sm sm:text-base leading-relaxed">ໂມງປະລະມານູ ນັບ 1 ວິນາທີ ຈາກການສັ່ນຂອງອະຕອມຊີຊຽມ <b class="text-[#f5d98b]">9,192,631,770</b> ຄັ້ງ. ຈິດກໍມີ “ຈັງຫວະ” ຂອງມັນ — ໝູນໄປຕາມເຫດປັດໄຈ 12 ຂໍ້ ເໝືອນເຂັມໂມງທີ່ບໍ່ເຄີຍຢຸດ ຖ້າຍັງມີອະວິຊາ.</p>
+            <p class="text-white/65 mt-3 max-w-3xl text-sm sm:text-base leading-relaxed">ໃນທາງພຸດທະທຳ ປະສົບການ ແລະ ຄວາມທຸກ <b class="text-[#f5d98b]">ບໍ່ໄດ້ເກີດຂຶ້ນລອຍໆ</b> ແຕ່ເກີດໂດຍອາໄສເຫດ ແລະ ປັດໄຈ 12 ຂໍ້ — ຂໍ້ໜຶ່ງເປັນປັດໄຈໃຫ້ອີກຂໍ້ໜຶ່ງ ວົນເປັນວົງຈອນ ຕາບໃດທີ່ຍັງມີອະວິຊາ.</p>
+            <div class="flex flex-wrap items-center gap-x-1.5 gap-y-1 mt-3 text-[11px] sm:text-xs font-bold">
+              <?php foreach ($paticca as $k => $p): ?><span class="px-2 py-0.5 rounded-full bg-white/[.06] <?php echo in_array($k, [6, 7]) ? 'text-[#f5d98b] ring-1 ring-[#d4af37]/60' : 'text-white/75'; ?>"><?php echo $p['name']; ?></span><i class="fas <?php echo $k < 11 ? 'fa-arrow-right' : 'fa-rotate-left'; ?> text-[9px] text-[#d4af37]/70"></i><?php endforeach; ?>
+            </div>
+            <p class="text-xs text-white/50 mt-2"><i class="fas fa-circle-nodes text-[#d4af37] mr-1.5"></i>ປະຕິຈຈະສະມຸບບາດ ເນັ້ນ <b class="text-white/80">ຄວາມສຳພັນລະຫວ່າງເຫດ ແລະ ປັດໄຈ</b> — ບໍ່ແມ່ນພຽງລຳດັບເຫດການຕາມເວລາ. ໂມງນີ້ເປັນພຽງພາບຊ່ວຍຈື່ (ໂມງປະລະມານູແທ້ ນັບ 1 ວິນາທີ ຈາກການສັ່ນຂອງອະຕອມ ຊີຊຽມ-133 <span class="sci-num">9,192,631,770</span> ຮອບ — <a class="underline text-sky-300/80" href="https://www.bipm.org/en/si-base-units/second" target="_blank" rel="noopener">BIPM</a>).</p>
 
             <div class="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-6 lg:gap-10 items-center mt-6">
               <!-- Clock face -->
@@ -330,7 +408,7 @@
                   <button @click="clockView='live'" class="px-3 py-1.5 rounded-full text-xs font-bold transition-all" :class="clockView==='live' ? 'lux-btn' : 'lux-card text-white/60'">ໂມງເຄື່ອນໄຫວ</button>
                   <button @click="clockView='image'" class="px-3 py-1.5 rounded-full text-xs font-bold transition-all" :class="clockView==='image' ? 'lux-btn' : 'lux-card text-white/60'">ຮູບຕົ້ນສະບັບ</button>
                 </div>
-                <div x-show="clockView==='live'" class="relative mx-auto w-full max-w-[440px] aspect-square" @touchstart.passive.stop="touchX = $event.touches[0].clientX" @touchend.stop="stepSwipe($event.changedTouches[0].clientX, d => setTick(tick + d))">
+                <div x-show="clockView==='live'" class="relative mx-auto w-full max-w-[440px] aspect-square" @touchstart.passive.stop="tStart($event)" @touchend.stop="stepSwipe($event, d => setTick(tick + d))">
                   <svg viewBox="0 0 400 400" class="absolute inset-0 w-full h-full">
                     <circle cx="200" cy="200" r="190" fill="rgba(255,255,255,.02)" stroke="rgba(212,175,55,.45)" stroke-width="2"/>
                     <circle cx="200" cy="200" r="150" fill="none" stroke="rgba(255,255,255,.08)" stroke-dasharray="3 6"/>
@@ -389,11 +467,12 @@
         </div>
 
         <!-- 10. Kala 3: cause and result across time -->
-        <div class="slide flex px-6 sm:px-16 py-8 sm:py-10" x-show="i===6" x-transition.opacity.duration.500ms>
+        <div class="slide flex px-4 sm:px-16 py-5 sm:py-10" x-show="i===6" x-transition.opacity.duration.500ms>
           <div class="w-full">
-            <p class="kicker text-xs sm:text-sm font-bold text-[#d4af37]">ເວລາກັບຈິດ · ຕອນທີ 7</p>
+            <div class="flex flex-wrap items-center gap-2"><p class="kicker text-xs sm:text-sm font-bold text-[#d4af37] mr-1">ເວລາກັບຈິດ · ຕອນທີ 7</p><?php echo $dharmaTag; ?></div>
             <h2 class="lux-title text-3xl sm:text-5xl mt-3">ກາລະ 3 — <span class="lux-gold">ເຫດ ແລະ ຜົນ ໃນເວລາ</span></h2>
-            <p class="text-white/65 mt-3 max-w-3xl text-sm sm:text-base leading-relaxed">ສັງເຂບ 4: ການຫຍໍ້ປະຕິຈຈະສະມຸບບາດ ຕາມເຫດ ແລະ ຜົນ ທີ່ສຳພັນກັບເວລາ.</p>
+            <p class="text-white/65 mt-3 max-w-3xl text-sm sm:text-base leading-relaxed">ສັງເຂບ 4: ການຈັດກຸ່ມປະຕິຈຈະສະມຸບບາດ ຕາມເຫດ ແລະ ຜົນ ຂ້າມອະດີດ-ປັດຈຸບັນ-ອະນາຄົດ (ຕາມຄຳອະທິບາຍສາຍເຖລະວາດ).</p>
+            <p class="text-xs text-white/45 mt-1.5 max-w-3xl"><i class="fas fa-circle-info text-[#d4af37] mr-1.5"></i>ນີ້ເປັນກອບອະທິບາຍແບບໜຶ່ງ — ບໍ່ໄດ້ໝາຍຄວາມວ່າທຸກຂໍ້ເກີດແຍກກັນ ເປັນຂັ້ນຕອນ ທີ່ມີຊ່ວງເວລາຕາຍຕົວສະເໝີ.</p>
 
             <!-- Timeline lanes -->
             <div class="grid grid-cols-1 md:grid-cols-[1fr_auto_1.6fr_auto_1.2fr_auto_1fr] items-stretch gap-2 md:gap-3 mt-7">
@@ -419,9 +498,10 @@
             <div class="grid lg:grid-cols-2 gap-4 sm:gap-5 mt-6">
               <!-- Starlight link -->
               <div class="lux-card rounded-[28px] p-5 sm:p-6 rise" style="animation-delay:.3s">
-                <p class="font-bold text-sm sm:text-base"><i class="fas fa-star text-[#d4af37] mr-2"></i>ເຊື່ອມກັບແສງດາວ</p>
-                <p class="text-sm text-white/70 mt-3 leading-relaxed"><b style="color:#f5d98b">ປັດຈຸບັນຜົນ</b> (ວິນຍານ → ເວທະນາ) ຄື “ແສງດາວ” — ມັນປາກົດຕອນນີ້ ແຕ່ເຫດຂອງມັນເກີດໃນອະດີດ.</p>
-                <p class="text-sm text-white/70 mt-2 leading-relaxed"><b style="color:#fda4af">ປັດຈຸບັນເຫດ</b> (ຕັນຫາ → ພົບ) ຄືຈຸດທີ່ຈິດ “ຕີຄວາມ” ແລະ ຍຶດຖື — ແລະ ເປັນເຫດໃໝ່ ທີ່ສົ່ງຜົນໄປຫາອະນາຄົດ.</p>
+                <p class="font-bold text-sm sm:text-base"><i class="fas fa-star text-[#d4af37] mr-2"></i>ເຊື່ອມກັບແສງດາວ <span class="text-xs text-white/45 font-normal">(ອຸປະມາ)</span></p>
+                <p class="text-sm text-white/70 mt-3 leading-relaxed"><b style="color:#f5d98b">ປັດຈຸບັນຜົນ</b> (ວິນຍານ → ເວທະນາ): ຄ້າຍແສງດາວ ຕົງທີ່ <b class="text-white/85">ປາກົດຕອນນີ້ ແຕ່ມີເຫດມາກ່ອນ</b>.</p>
+                <p class="text-sm text-white/70 mt-2 leading-relaxed"><b style="color:#fda4af">ປັດຈຸບັນເຫດ</b> (ຕັນຫາ → ພົບ): ຈຸດທີ່ຈິດຕີຄວາມ ແລະ ຍຶດຖື — ກາຍເປັນເຫດໃໝ່ ສົ່ງຜົນຕໍ່ໄປ.</p>
+                <p class="text-xs text-white/45 mt-2">ບໍ່ໄດ້ທຽບແຕ່ລະຂໍ້ກັບເວລາເດີນທາງຂອງແສງໂດຍກົງ — ເປັນກະບວນການຄົນລະປະເພດ.</p>
               </div>
               <!-- Vatta 3 wheel -->
               <div class="lux-card rounded-[28px] p-5 sm:p-6 flex items-center gap-5 rise" style="animation-delay:.4s">
@@ -469,15 +549,15 @@
         $implied = '#f87171';
         ?>
         <!-- 11. The wheel: defilement · action · result across past, present, future -->
-        <div class="slide flex px-6 sm:px-16 py-8 sm:py-10" x-show="i===7" x-transition.opacity.duration.500ms>
+        <div class="slide flex px-4 sm:px-16 py-5 sm:py-10" x-show="i===7" x-transition.opacity.duration.500ms>
           <div class="w-full">
-            <p class="kicker text-xs sm:text-sm font-bold text-[#d4af37]">ເວລາກັບຈິດ · ຕອນທີ 8</p>
+            <div class="flex flex-wrap items-center gap-2"><p class="kicker text-xs sm:text-sm font-bold text-[#d4af37] mr-1">ເວລາກັບຈິດ · ຕອນທີ 8</p><?php echo $dharmaTag; ?></div>
             <h2 class="lux-title text-3xl sm:text-5xl mt-3">ວົງລໍ້ <span class="lux-gold">ກິເລສ · ກຳ · ວິບາກ</span></h2>
-            <p class="text-white/65 mt-3 max-w-3xl text-sm sm:text-base leading-relaxed">ການເຮັດວຽກຂອງປະຕິຈຈະສະມຸບບາດ ໃນນັຍຂອງ ກິເລສ-ກຳ-ວິບາກ ແລະ ອະດີດ-ປັດຈຸບັນ-ອະນາຄົດ — ກົດເບິ່ງແຕ່ລະຂັ້ນຕອນໄດ້.</p>
+            <p class="text-white/65 mt-3 max-w-3xl text-sm sm:text-base leading-relaxed"><b class="text-rose-300">ກິເລສ</b> (ຄວາມໂລບ ໂກດ ຫຼົງ) → <b class="text-sky-300">ກຳ</b> (ການກະທຳທີ່ມີເຈດຕະນາ ທາງກາຍ ວາຈາ ໃຈ) → <b class="text-[#f5d98b]">ວິບາກ</b> (ຜົນຕາມເງື່ອນໄຂ) → ກິເລສໃໝ່ ↻ — ເປັນ <b class="text-white/85">ເຄືອຂ່າຍເຫດປັດໄຈ</b> ທີ່ວົນຕໍ່ກັນ ບໍ່ແມ່ນເສັ້ນຊື່. ກົດເບິ່ງແຕ່ລະຂັ້ນຕອນໄດ້.</p>
 
             <div class="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-6 lg:gap-10 items-start mt-6">
               <!-- Wheel -->
-              <div class="rise" @touchstart.passive.stop="touchX = $event.touches[0].clientX" @touchend.stop="stepSwipe($event.changedTouches[0].clientX, d => wheelGo(wheelStep + d))">
+              <div class="rise" @touchstart.passive.stop="tStart($event)" @touchend.stop="stepSwipe($event, d => wheelGo(wheelStep + d))">
                 <svg viewBox="0 0 400 400" class="mx-auto w-full max-w-[460px] h-auto select-none">
                   <circle cx="200" cy="200" r="199" fill="none" stroke="rgba(212,175,55,.35)" stroke-width="1.5" stroke-dasharray="4 8"><animateTransform attributeName="transform" type="rotate" from="0 200 200" to="360 200 200" dur="30s" repeatCount="indefinite"/></circle>
                   <!-- Ring 1: the 12 links -->
@@ -622,6 +702,47 @@
           </div>
         </div>
 
+        <!-- 11a. Feeling → craving: the link we can actually practise with -->
+        <div class="slide flex px-4 sm:px-16 py-5 sm:py-10" x-show="i===8" x-transition.opacity.duration.500ms>
+          <div class="w-full">
+            <div class="flex flex-wrap items-center gap-2"><p class="kicker text-xs sm:text-sm font-bold text-[#d4af37] mr-1">ເວລາກັບຈິດ · ຕອນທີ 9</p><?php echo $dharmaTag; ?></div>
+            <h2 class="lux-title text-3xl sm:text-5xl mt-3"><span class="lux-gold">ເວທະນາ → ຕັນຫາ</span> ຈຸດທີ່ຝຶກໄດ້ໃນຊີວິດຈິງ</h2>
+            <p class="text-white/65 mt-3 max-w-3xl text-sm sm:text-base">ຕົວຢ່າງ: <b class="text-[#f5d98b]">ເຫັນໂທລະສັບລຸ້ນໃໝ່</b> — ສອງເສັ້ນທາງ ຈາກຄວາມຮູ້ສຶກດຽວກັນ.</p>
+            <?php
+            $lanes = [
+                ['ອັດຕະໂນມັດ — ບໍ່ທັນຮູ້ຕົວ', '#fda4af', [['ຜັດສະ', 'ເຫັນໂທລະສັບ'], ['ເວທະນາ', 'ຮູ້ສຶກມັກ'], ['ຕັນຫາ', '“ຢາກໄດ້”'], ['ອຸປາທານ', '“ຕ້ອງມີເຄື່ອງນີ້”'], ['ທຸກ', 'ບໍ່ໄດ້ → ຫງຸດຫງິດ']]],
+                ['ມີສະຕິ — ຮູ້ທັນຄວາມຮູ້ສຶກ', '#5eead4', [['ຜັດສະ', 'ເຫັນໂທລະສັບ'], ['ເວທະນາ', 'ຮູ້ສຶກມັກ'], ['ສະຕິ', '“ນີ້ຄືຄວາມພໍໃຈ ທີ່ກຳລັງເກີດ”'], ['ເລືອກໄດ້', 'ບໍ່ຕ້ອງຟ້າວເຮັດຕາມຄວາມຢາກ'], ['ໃຈເບົາ', 'ຕັດສິນໃຈດ້ວຍປັນຍາ']]],
+            ];
+            foreach ($lanes as $l => [$label, $tone, $chain]): ?>
+            <div class="rounded-[24px] p-4 sm:p-5 mt-4 border bg-white/[.03] rise" style="border-color:<?php echo $tone; ?>55; animation-delay:<?php echo $l * .15; ?>s">
+              <p class="text-xs sm:text-sm font-black" style="color:<?php echo $tone; ?>"><?php echo $label; ?></p>
+              <div class="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr_auto_1fr] items-center gap-2 mt-3">
+                <?php foreach ($chain as $k => [$term, $what]): $gap = $k === 2; ?>
+                <div class="rounded-2xl px-3 py-2.5 text-center <?php echo $gap ? 'ring-2' : 'bg-white/5'; ?>" style="<?php echo $gap ? "background:{$tone}1f; --tw-ring-color:{$tone}" : ''; ?>">
+                  <p class="font-black text-sm sm:text-base" style="color:<?php echo $k >= 2 ? $tone : '#fff'; ?>"><?php echo $term; ?></p>
+                  <p class="text-[11px] sm:text-xs text-white/60 mt-0.5"><?php echo $what; ?></p>
+                </div>
+                <?php if ($k < 4): ?><i class="fas fa-arrow-right hidden sm:block text-center" style="color:<?php echo $k === 1 ? $tone : 'rgba(255,255,255,.35)'; ?>"></i><i class="fas fa-arrow-down sm:hidden text-center text-white/35"></i><?php endif; ?>
+                <?php endforeach; ?>
+              </div>
+            </div>
+            <?php endforeach; ?>
+            <div class="grid md:grid-cols-[1.4fr_1fr] gap-3 mt-5">
+              <div class="rounded-2xl p-4 sm:p-5 bg-[#d4af37]/10 border border-[#d4af37]/40 rise" style="animation-delay:.35s">
+                <p class="lux-gold text-lg sm:text-2xl font-black leading-snug">ສະຕິ ຊ່ວຍໃຫ້ເຮົາເຫັນເວທະນາ ແລະ ຄວາມຢາກ ໂດຍບໍ່ຈຳເປັນຕ້ອງຕອບສະໜອງຕາມມັນ ແບບອັດຕະໂນມັດ</p>
+                <p class="text-xs sm:text-sm text-white/65 mt-2"><i class="fas fa-comment-slash text-[#d4af37] mr-1.5"></i>ຄືກັນ ເວລາມີຄົນເວົ້າບໍ່ເຂົ້າຫູ: ເຫັນ “ຄວາມບໍ່ພໍໃຈກຳລັງເກີດ” ກ່ອນທີ່ຈະເຜີຍໂກດ ຫຼື ໂຕ້ກັບ.</p>
+              </div>
+              <div class="lux-card rounded-2xl p-4 sm:p-5 rise" style="animation-delay:.45s">
+                <p class="font-bold text-sm"><i class="fas fa-heart-pulse text-[#d4af37] mr-1.5"></i>ມີສະຕິ ≠ ບໍ່ມີຄວາມຮູ້ສຶກ</p>
+                <p class="text-xs sm:text-sm text-white/60 mt-1.5">ເວທະນາ ຍັງເກີດໄດ້ຕາມປົກກະຕິ — ສິ່ງທີ່ປ່ຽນ ຄືເຮົາ <b class="text-white/85">ເຫັນມັນທັນ</b> ແລະ ບໍ່ປ່ອຍໃຫ້ມັນລາກໄປເປັນຕັນຫາ ແລະ ອຸປາທານ ໂດຍບໍ່ຮູ້ຕົວ. (ອຸປະມາ “ລູກສອນສອງດອກ” — ສັລລັດຖະສູດ)</p>
+              </div>
+            </div>
+            <p class="src src-dharma mt-4"><i class="fas fa-book-open mr-1"></i>ແຫຼ່ງອ້າງອີງ (ທຳມະ):
+              <a href="https://suttacentral.net/sn12.1" target="_blank" rel="noopener">ສັງ. ນິ. 12.1 ປະຕິຈຈະສະມຸບບາດສູດ</a> ·
+              <a href="https://suttacentral.net/sn36.6" target="_blank" rel="noopener">ສັງ. ສະ. 36.6 ສັລລັດຖະສູດ</a></p>
+          </div>
+        </div>
+
         <!-- 11b. Eaten by time vs eating time: the wheel of an ordinary person and of an Arahant -->
         <?php
         $sides = [
@@ -631,9 +752,9 @@
         // What each link becomes for the Arahant: ວິຊາ replaces ອະວິຊາ, actions are mere ກິລິຍາ, the senses still work, the rest has ceased.
         $arahantState = fn($k) => $k === 0 ? ['ວິຊາ', '#5eead4'] : ($k === 1 ? ['ກິລິຍາ', '#94a3b8'] : ($k <= 6 ? ['ຮັບຮູ້', '#5eead4'] : ['ດັບ', '#64748b']));
         ?>
-        <div class="slide flex px-6 sm:px-16 py-8 sm:py-10" x-show="i===8" x-transition.opacity.duration.500ms>
+        <div class="slide flex px-4 sm:px-16 py-5 sm:py-10" x-show="i===9" x-transition.opacity.duration.500ms>
           <div class="w-full">
-            <p class="kicker text-xs sm:text-sm font-bold text-[#d4af37]">ເວລາກັບຈິດ · ຕອນທີ 9</p>
+            <div class="flex flex-wrap items-center gap-2"><p class="kicker text-xs sm:text-sm font-bold text-[#d4af37] mr-1">ເວລາກັບຈິດ · ຕອນທີ 10</p><?php echo $dharmaTag; ?></div>
             <h2 class="lux-title text-3xl sm:text-5xl mt-3">ຖືກເວລາກິນ <span class="text-white/40">vs</span> <span class="lux-gold">ກິນເວລາ</span></h2>
             <div class="lux-card rounded-2xl px-4 py-3 mt-4 max-w-4xl">
               <p class="text-xs sm:text-sm text-[#f5d98b]/85 italic">ກາໂລ ຄະສະຕິ ພູຕານິ ສັພພາເນວະ ສະຫັດຕະນາ · ໂຍ ຈະ ກາລະຄະໂສ ພູໂຕ ສະ ພູຕະປະຈະນິງ ປະຈິ</p>
@@ -641,7 +762,7 @@
             </div>
 
             <!-- Two wheels, one shared step -->
-            <div class="grid md:grid-cols-2 gap-6 mt-6" @touchstart.passive.stop="touchX = $event.touches[0].clientX" @touchend.stop="stepSwipe($event.changedTouches[0].clientX, d => cmpGo(cmpStep + d))">
+            <div class="grid md:grid-cols-2 gap-6 mt-6" @touchstart.passive.stop="tStart($event)" @touchend.stop="stepSwipe($event, d => cmpGo(cmpStep + d))">
               <?php foreach ($sides as $s => [$who, $time, $tone, $note]): ?>
               <div class="lux-card rounded-[28px] p-4 sm:p-5 rise" style="border-color:<?php echo $tone; ?>55; animation-delay:<?php echo $s === 'a' ? '.15' : '0'; ?>s">
                 <div class="flex items-baseline justify-between gap-2">
@@ -721,16 +842,16 @@
               </div>
 
               <!-- Science view -->
-              <div class="lux-card rounded-[24px] p-4 sm:p-5 rise" style="animation-delay:.15s">
-                <p class="font-black text-sm sm:text-base"><i class="fas fa-flask text-[#d4af37] mr-2"></i>ທຽບກັບວິທະຍາສາດ</p>
+              <div class="sci-card rounded-[24px] p-4 sm:p-5 rise" style="animation-delay:.15s">
+                <p class="font-black text-sm sm:text-base"><i class="fas fa-flask text-sky-300 mr-2"></i>ມຸມມອງຈິດຕະວິທະຍາ <span class="text-xs text-white/45 font-normal">(ປຽບທຽບ — ບໍ່ແມ່ນການພິສູດທຳມະ)</span></p>
                 <div class="flex items-center justify-between gap-1 mt-3 text-center text-[11px] font-bold">
                   <?php foreach ([['fa-bolt', 'ສິ່ງເຮົາ', 'ຜັດສະ'], ['fa-heart-pulse', 'ຄວາມຮູ້ສຶກ', 'ເວທະນາ'], ['fa-person-running', 'ປະຕິກິລິຍາ', 'ຕັນຫາ']] as $n => $c): ?>
                   <?php if ($n): ?><i class="fas fa-arrow-right <?php echo $n === 2 ? 'text-[#f87171]' : 'text-white/40'; ?>"></i><?php endif; ?>
                   <div class="flex-1"><div class="w-10 h-10 mx-auto rounded-full bg-[#d4af37]/10 ring-1 ring-[#d4af37]/30 flex items-center justify-center text-[#f5d98b]"><i class="fas <?php echo $c[0]; ?>"></i></div><p class="mt-1"><?php echo $c[1]; ?></p><p class="text-white/45"><?php echo $c[2]; ?></p></div>
                   <?php endforeach; ?>
                 </div>
-                <p class="text-xs sm:text-sm text-white/70 mt-3 leading-relaxed">ສະໝອງ ປະເມີນທຸກສິ່ງເຮົາ ເປັນ “ດີ / ບໍ່ດີ” ໂດຍອັດຕະໂນມັດ (ເວທະນາ) ແລ້ວລະບົບ “ຢາກໄດ້ - ຢາກໜີ” ກໍຕອບສະໜອງ (ຕັນຫາ). ຍິ່ງເຮັດຊໍ້າ ເສັ້ນທາງປະສາດນັ້ນ ຍິ່ງແຂງແຮງ ກາຍເປັນນິໄສ — ຄືວົງລໍ້ທີ່ໝູນໄວຂຶ້ນ.</p>
-                <p class="text-xs sm:text-sm text-white/70 mt-2 leading-relaxed"><b class="text-[#5eead4]">ສະຕິ</b> ຄືການເຫັນ “ຊ່ອງຫວ່າງ” ລະຫວ່າງ ຄວາມຮູ້ສຶກ ແລະ ປະຕິກິລິຍາ — ຈຸດດຽວກັນ ທີ່ຕັນຫາເລີ່ມຕົ້ນຕໍ່ຈາກເວທະນາ (ມູລທີ 2). ສິ່ງທີ່ບໍ່ຖືກປຸງແຕ່ງ (ອະສັງຂະຕະທາດ) “ເກີດບໍ່ປາກົດ ເສື່ອມບໍ່ປາກົດ” — ເວລາ ຈຶ່ງບໍ່ມີຫຍັງໃຫ້ກິນ.</p>
+                <p class="text-xs sm:text-sm text-white/70 mt-3 leading-relaxed">ໃນຊີວິດປະຈຳວັນ ເຮົາມັກຮູ້ສຶກ “ມັກ / ບໍ່ມັກ” ຕໍ່ສິ່ງທີ່ພົບຢ່າງໄວ ແລ້ວມີແຮງຢາກເຂົ້າຫາ ຫຼື ຢາກໜີ. ປະຕິກິລິຍາທີ່ເຮັດຊໍ້າໆ ມັກກາຍເປັນນິໄສ — ຄ້າຍວົງລໍ້ທີ່ໝູນໄວຂຶ້ນ.</p>
+                <p class="text-xs sm:text-sm text-white/70 mt-2 leading-relaxed"><b class="text-[#5eead4]">ສະຕິ</b> ຊ່ວຍໃຫ້ເຫັນ “ຊ່ອງຫວ່າງ” ລະຫວ່າງຄວາມຮູ້ສຶກ ແລະ ປະຕິກິລິຍາ — ກົງກັບຈຸດທີ່ຕັນຫາສືບຕໍ່ຈາກເວທະນາ (ມູລທີ 2). ຄວາມຮູ້ສຶກຍັງເກີດ ແຕ່ບໍ່ຈຳເປັນຕ້ອງຕອບສະໜອງຕາມມັນໂດຍອັດຕະໂນມັດ.</p>
               </div>
             </div>
 
@@ -746,7 +867,7 @@
               <p class="text-[11px] sm:text-xs text-white/45 mt-1">ຕັດໄວ້ໃນບາລີ ອຸປະນິສະສູດ (ສູດທີ 3) ທະສະພະລະວັກ · ສັງ. ນິ. 16/35/64</p>
 
               <div class="grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] gap-6 items-center mt-4">
-                <svg viewBox="0 0 560 640" class="mx-auto w-full max-w-[520px] h-auto select-none" @touchstart.passive.stop="touchX = $event.touches[0].clientX" @touchend.stop="stepSwipe($event.changedTouches[0].clientX, d => uGo(uSel + d))">
+                <svg viewBox="0 0 560 640" class="mx-auto w-full max-w-[520px] h-auto select-none" @touchstart.passive.stop="tStart($event)" @touchend.stop="stepSwipe($event, d => uGo(uSel + d))">
                   <defs>
                     <marker id="u-arrow-p" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#fda4af"/></marker>
                     <marker id="u-arrow-a" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#5eead4"/></marker>
@@ -814,14 +935,14 @@
         </div>
 
         <!-- 12. Time with mind — Buddhadasa's sermon -->
-        <div class="slide flex px-6 sm:px-16 py-8 sm:py-10" x-show="i===9" x-transition.opacity.duration.500ms>
+        <div class="slide flex px-4 sm:px-16 py-5 sm:py-10" x-show="i===10" x-transition.opacity.duration.500ms>
           <div class="w-full">
-            <p class="kicker text-xs sm:text-sm font-bold text-[#d4af37]">ເວລາກັບຈິດ · ຕອນທີ 9</p>
+            <div class="flex flex-wrap items-center gap-2"><p class="kicker text-xs sm:text-sm font-bold text-[#d4af37] mr-1">ເວລາກັບຈິດ · ຕອນທີ 11</p><?php echo $dharmaTag; ?></div>
             <h2 class="lux-title text-3xl sm:text-5xl mt-3">ເວລາ ຄື <span class="lux-gold">ການປ່ຽນແປງຂອງສັງຂານ</span></h2>
             <div class="grid lg:grid-cols-[1.2fr_1fr] gap-5 sm:gap-6 mt-6">
               <div class="rise">
                 <div class="lux-card rounded-[24px] overflow-hidden aspect-video">
-                  <template x-if="i===9">
+                  <template x-if="i===10">
                     <iframe class="w-full h-full" src="https://www.youtube-nocookie.com/embed/5-N1ka6iRS8?start=1935&rel=0" title="ເວລາ — ທ່ານພຸດທະທາດ ພິກຂຸ" frameborder="0" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
                   </template>
                 </div>
@@ -851,23 +972,79 @@
         </div>
 
         <!-- 14. Summary -->
-        <div class="slide flex px-6 sm:px-16 py-8 sm:py-10" x-show="i===10" x-transition.opacity.duration.500ms>
+        <div class="slide flex px-4 sm:px-16 py-5 sm:py-10" x-show="i===11" x-transition.opacity.duration.500ms>
           <div class="w-full max-w-4xl text-center">
             <i class="fas fa-dharmachakra text-4xl text-[#d4af37] rise"></i>
             <p class="kicker text-xs sm:text-sm font-bold text-[#d4af37] mt-5">ສະຫຼຸບ</p>
-            <h2 class="lux-title text-3xl sm:text-5xl mt-3 leading-snug">ສິ່ງທີ່ເຮົາເຫັນ ແມ່ນ <span class="lux-gold">ແສງ</span><br>ບໍ່ແມ່ນ <span class="lux-gold">ດວງດາວ</span></h2>
-            <div class="lux-line w-48 mx-auto my-7"></div>
+            <!-- Closing: star → mind → seeing conditions -->
+            <div class="space-y-3 mt-5 text-left">
+              <div class="sci-card rounded-2xl p-4 sm:p-5 flex gap-4 items-start rise">
+                <i class="fas fa-star text-sky-300 text-xl mt-1"></i>
+                <p class="text-base sm:text-xl font-bold leading-snug">ເມື່ອເຮົາແນມດາວ ເຮົາຮຽນຮູ້ວ່າ <span class="text-sky-200">ແສງທີ່ມາຮອດເຮົາມື້ນີ້ ເລີ່ມຕົ້ນຈາກເຫດການໃນອະດີດ</span></p>
+              </div>
+              <div class="text-center"><i class="fas fa-arrow-down text-white/35"></i></div>
+              <div class="rounded-2xl p-4 sm:p-5 flex gap-4 items-start bg-[#d4af37]/10 border border-dashed border-[#d4af37]/45 rise" style="animation-delay:.15s">
+                <i class="fas fa-dharmachakra text-[#d4af37] text-xl mt-1"></i>
+                <p class="text-base sm:text-xl font-bold leading-snug">ເມື່ອເຮົາແນມຈິດ ເຮົາອາດເຫັນຄືກັນວ່າ <span class="text-[#f5d98b]">ຄວາມຮູ້ສຶກ ຄວາມຢາກ ແລະ ຄວາມຍຶດຖື ໃນປັດຈຸບັນ ລ້ວນມີເຫດປັດໄຈທີ່ມາກ່ອນ</span></p>
+              </div>
+            </div>
+            <h2 class="lux-title text-2xl sm:text-4xl mt-7 leading-snug">ການເຫັນເຫດປັດໄຈຢ່າງຊັດເຈນ <span class="lux-gold">ອາດເປັນຈຸດເລີ່ມຕົ້ນ</span><br>ຂອງການບໍ່ຖືກເຫດປັດໄຈນັ້ນ ລາກໄປໂດຍບໍ່ຮູ້ຕົວ</h2>
+            <div class="lux-line w-48 mx-auto my-6"></div>
             <div class="grid sm:grid-cols-3 gap-3 text-left">
-              <?php foreach ([['fa-clock', 'ປັດຈຸບັນທີ່ຮູ້ສຶກ', 'ແທ້ຈິງແລ້ວ ແມ່ນອະດີດທີ່ຫາກໍຜ່ານໄປ'], ['fa-rotate', 'ຈິດເກີດ-ດັບ', 'ບໍ່ມີດວງໃດຢູ່ຄົງທີ່ ຫຼື ເດີນທາງຕໍ່ໄປ'], ['fa-hand', 'ເຫັນຕາມຈິງ', 'ຫຼຸດການຍຶດຖືວ່າ “ນີ້ແມ່ນເຮົາ”']] as $k => $s): ?>
-              <div class="lux-card rounded-2xl p-4 rise" style="animation-delay:<?php echo $k * .12; ?>s">
-                <i class="fas <?php echo $s[0]; ?> text-[#d4af37]"></i>
+              <?php foreach ([['fa-flask', 'ວິທະຍາສາດ', 'ສິ່ງທີ່ເຮົາເຫັນເທິງຟ້າ ແມ່ນແສງທີ່ເດີນທາງມາ — ບອກຂໍ້ມູນຂອງວັດຖຸ ຕອນແສງອອກເດີນທາງ', 'sci-card', 'text-sky-300'], ['fa-dharmachakra', 'ທຳມະ', 'ປະສົບການມີເຫດປັດໄຈ: ເວທະນາ → ຕັນຫາ → ອຸປາທານ ນຳໄປສູ່ທຸກໄດ້', 'lux-card', 'text-[#d4af37]'], ['fa-person-praying', 'ການປະຕິບັດ', 'ຝຶກສັງເກດຄວາມຮູ້ສຶກ ແລະ ຄວາມຢາກ ເພື່ອບໍ່ຕອບສະໜອງຕາມຄວາມເຄີຍຊິນ', 'lux-card', 'text-[#5eead4]']] as $k => $s): ?>
+              <div class="<?php echo $s[3]; ?> rounded-2xl p-4 rise" style="animation-delay:<?php echo .3 + $k * .12; ?>s">
+                <i class="fas <?php echo $s[0]; ?> <?php echo $s[4]; ?>"></i>
                 <p class="font-bold text-sm sm:text-base mt-2"><?php echo $s[1]; ?></p>
                 <p class="text-xs sm:text-sm text-white/55 mt-1"><?php echo $s[2]; ?></p>
               </div>
               <?php endforeach; ?>
             </div>
+            <p class="text-xs sm:text-sm text-white/50 mt-6 leading-relaxed">ເຂົ້າໃຈວິທະຍາສາດເລື່ອງແສງ → ໄດ້ມຸມມອງໃໝ່ໃນການພິຈາລະນາການຮັບຮູ້ · ສຶກສາປະຕິຈຈະສະມຸບບາດ → ໄດ້ເຄື່ອງມືອີກແບບໜຶ່ງ ໃນການເບິ່ງເຫດປັດໄຈຂອງປະສົບການ ແລະ ຄວາມທຸກ.</p>
           </div>
         </div>
+
+        <!-- 15. Sources — science and dharma kept apart, so neither appears to vouch for the other -->
+        <div class="slide flex px-4 sm:px-16 py-5 sm:py-10" x-show="i===12" x-transition.opacity.duration.500ms>
+          <div class="w-full">
+            <p class="kicker text-xs sm:text-sm font-bold text-[#d4af37]">ແຫຼ່ງອ້າງອີງ</p>
+            <h2 class="lux-title text-3xl sm:text-5xl mt-3">ສອງຊັ້ນ <span class="lux-gold">ສອງແຫຼ່ງ</span></h2>
+            <p class="text-white/60 mt-3 max-w-3xl text-sm">ແຫຼ່ງວິທະຍາສາດ ຮອງຮັບສະເພາະຂໍ້ເທັດຈິງເລື່ອງແສງ — ບໍ່ໄດ້ຮັບຮອງການຕີຄວາມທາງທຳມະ. ແຫຼ່ງທຳມະ ອ້າງອີງພຣະສູດ ແຍກຕ່າງຫາກ.</p>
+            <div class="grid md:grid-cols-2 gap-4 mt-6">
+              <div class="sci-card rounded-[24px] p-5 rise">
+                <?php echo $sciTag; ?>
+                <ul class="mt-4 space-y-2.5 text-sm">
+                  <?php foreach ([
+                    ['https://science.nasa.gov/exoplanets/what-is-a-light-year/', 'NASA — What is a light-year?', 'ປີແສງ = ໄລຍະທາງ, ≈ 9.46 ລ້ານລ້ານ km'],
+                    ['https://science.nasa.gov/mission/webb/science-overview/science-explainers/how-does-webb-see-back-in-time/', 'NASA — How Does Webb See Back in Time?', 'ຍິ່ງໄກ ຍິ່ງເຫັນຍ້ອນໄປໃນອະດີດ; ດວງຈັນ 1.3 ວິ, ດວງອາທິດ ≈ 8 ນາທີ'],
+                    ['https://science.nasa.gov/moon/facts/', 'NASA — Moon facts', 'ໄລຍະທາງສະເລ່ຍ 384,400 km'],
+                    ['https://science.nasa.gov/sun/facts/', 'NASA — Sun facts', 'ໂລກ-ດວງອາທິດ ≈ 150 ລ້ານ km; ລະບົບດາວໃກ້ທີ່ສຸດ 4.24 ປີແສງ'],
+                    ['https://apod.nasa.gov/apod/ap160118.html', 'NASA APOD — Proxima Centauri: The Closest Star', 'ແສງໃຊ້ເວລາ 4.24 ປີ ມາຮອດເຮົາ'],
+                    ['https://physics.nist.gov/cgi-bin/cuu/Value?c', 'NIST — Speed of light in vacuum', '299,792,458 m/s'],
+                    ['https://www.bipm.org/en/si-base-units/second', 'BIPM — The second (SI)', 'ຊີຊຽມ-133: 9,192,631,770 ຮອບ = 1 ວິນາທີ'],
+                  ] as [$url, $name, $note]): ?>
+                  <li><a href="<?php echo $url; ?>" target="_blank" rel="noopener" class="font-bold text-sky-200 underline underline-offset-2"><?php echo $name; ?></a><p class="text-xs text-white/50"><?php echo $note; ?></p></li>
+                  <?php endforeach; ?>
+                </ul>
+              </div>
+              <div class="lux-card rounded-[24px] p-5 rise" style="animation-delay:.15s">
+                <?php echo $dharmaTag; ?>
+                <ul class="mt-4 space-y-2.5 text-sm">
+                  <?php foreach ([
+                    ['https://suttacentral.net/sn12.1', 'ສັງຍຸດຕະນິກາຍ 12.1 — ປະຕິຈຈະສະມຸບບາດສູດ', 'ລຳດັບ 12 ຂໍ້: ອະວິຊາ → … → ຊະລາມໍລະນະ'],
+                    ['https://suttacentral.net/sn12.23', 'ສັງຍຸດຕະນິກາຍ 12.23 — ອຸປະນິສະສູດ', 'ສາຍເກີດທຸກ ແລະ ສາຍດັບທຸກ (ປະຕິຈຈະສະມຸບບາດ 24)'],
+                    ['https://suttacentral.net/mn28', 'ມັດຊິມະນິກາຍ 28 — ມະຫາຫັດຖິປະໂທປະມະສູດ', '“ຜູ້ໃດເຫັນປະຕິຈຈະສະມຸບບາດ ຜູ້ນັ້ນເຫັນທຳ”'],
+                    ['https://suttacentral.net/sn22.48', 'ສັງຍຸດຕະນິກາຍ 22.48 — ຂັນທະສູດ', 'ຂັນ 5: ຮູບ ເວທະນາ ສັນຍາ ສັງຂານ ວິນຍານ'],
+                    ['https://suttacentral.net/sn36.6', 'ສັງຍຸດຕະນິກາຍ 36.6 — ສັລລັດຖະສູດ', 'ລູກສອນສອງດອກ: ເວທະນາເກີດ ແຕ່ບໍ່ຕ້ອງເພີ່ມທຸກ'],
+                  ] as [$url, $name, $note]): ?>
+                  <li><a href="<?php echo $url; ?>" target="_blank" rel="noopener" class="font-bold text-[#f5d98b] underline underline-offset-2"><?php echo $name; ?></a><p class="text-xs text-white/50"><?php echo $note; ?></p></li>
+                  <?php endforeach; ?>
+                  <li><p class="font-bold text-white/80">ທ່ານພຸດທະທາດ ພິກຂຸ — ເທດ “ເວລາ” (2510)</p><p class="text-xs text-white/50">ສັງຂະຕະທາດ ແລະ ອະສັງຂະຕະທາດ</p></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <!-- Image zoom -->
       <div x-show="zoom" x-transition.opacity @click="zoom=null" class="no-print absolute inset-0 z-40 bg-black/90 backdrop-blur flex items-center justify-center p-4 sm:p-10 cursor-zoom-out">
@@ -877,15 +1054,21 @@
 
       <!-- Controls -->
       <div class="no-print deck-controls relative z-30 flex-none flex items-center justify-between gap-4 px-4 sm:px-10 pt-3 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:pb-6">
-        <button @click="go(i-1)" :disabled="i===0" class="w-11 h-11 rounded-full lux-card flex items-center justify-center disabled:opacity-30 transition-all" aria-label="ກ່ອນໜ້າ"><i class="fas fa-arrow-left"></i></button>
-        <div class="flex items-center gap-1.5 sm:gap-2 overflow-x-auto">
+        <button @click="go(i-1)" :disabled="i===0" class="w-12 h-12 sm:w-11 sm:h-11 shrink-0 rounded-full lux-card flex items-center justify-center disabled:opacity-30 transition-all" aria-label="ກ່ອນໜ້າ"><i class="fas fa-arrow-left"></i></button>
+        <!-- Phones: a counter and progress bar instead of 20 tiny dots -->
+        <div class="sm:hidden flex-1 min-w-0 text-center">
+          <p class="text-[11px] font-bold text-[#c9b98a]/80 truncate"><span class="text-[#f5d98b]" x-text="(i+1) + ' / ' + total"></span> · <span x-text="titles[i]"></span></p>
+          <div class="h-1 rounded-full bg-white/10 mt-1.5 overflow-hidden"><div class="h-full rounded-full bg-[#d4af37] transition-all duration-500" :style="`width:${(i+1) / total * 100}%`"></div></div>
+        </div>
+        <div class="hidden sm:flex items-center gap-1.5 sm:gap-2 overflow-x-auto">
           <template x-for="n in total" :key="n">
             <button @click="go(n-1)" class="h-2 rounded-full transition-all duration-500" :class="i===n-1 ? 'w-8 bg-[#d4af37]' : 'w-2 bg-white/20 hover:bg-white/40'" :aria-label="titles[n-1]"></button>
           </template>
         </div>
-        <button @click="go(i+1)" :disabled="i===total-1" class="w-11 h-11 rounded-full lux-btn flex items-center justify-center disabled:opacity-30 transition-all" aria-label="ຕໍ່ໄປ"><i class="fas fa-arrow-right"></i></button>
+        <button @click="go(i+1)" :disabled="i===total-1" class="h-12 sm:h-11 px-5 sm:px-0 sm:w-11 shrink-0 rounded-full lux-btn flex items-center justify-center gap-2 font-black text-sm disabled:opacity-30 transition-all" aria-label="ຕໍ່ໄປ"><span class="sm:hidden">ຕໍ່ໄປ</span><i class="fas fa-arrow-right"></i></button>
       </div>
     </div>
+
 </section>
 
 <script>
@@ -893,6 +1076,7 @@
     return {
       i: 0,
       touchX: null,
+      touchY: null,
       fullscreen: false,
       zoom: null,
       // Paticcasamuppada clock: `step` only grows so the hand never spins backwards past 12.
@@ -1011,7 +1195,7 @@
       uSel: 12,
       uGo(n) { this.uSel = Math.max(0, Math.min(this.uNodes.length - 1, n)); },
       uSide(n) { return n < 12 ? 'p' : (n > 12 ? 'a' : 'dukkha'); },
-      titles: ['ປັດຈຸບັນທີ່ເຮົາຮູ້ສຶກ', 'ແສງຈາກດວງດາວ', 'ແສງດາວ ກັບ ຈິດ', 'ຈິດເກີດ-ດັບ ທຸກຂະນະ', 'ຂັນ 5 ກັບ ແສງດາວ', 'ໂມງປະຕິຈຈະສະມຸບບາດ', 'ກາລະ 3: ເຫດ ແລະ ຜົນ', 'ວົງລໍ້ ກິເລສ · ກຳ · ວິບາກ', 'ຖືກເວລາກິນ · ກິນເວລາ', 'ເວລາ ກັບ ຈິດ', 'ສະຫຼຸບ'],
+      titles: ['ປັດຈຸບັນທີ່ເຮົາຮັບຮູ້', 'ແສງຈາກດວງດາວ', 'ແສງດາວ ກັບ ຈິດ', 'ຈິດເກີດ-ດັບ ທຸກຂະນະ', 'ຂັນ 5 ກັບ ອຸປະມາແສງດາວ', 'ໂມງປະຕິຈຈະສະມຸບບາດ', 'ກາລະ 3: ເຫດ ແລະ ຜົນ', 'ວົງລໍ້ ກິເລສ · ກຳ · ວິບາກ', 'ເວທະນາ → ຕັນຫາ', 'ຖືກເວລາກິນ · ກິນເວລາ', 'ເວລາ ກັບ ຈິດ', 'ສະຫຼຸບ', 'ແຫຼ່ງອ້າງອີງ'],
       get total() { return this.titles.length; },
 
       init() {
@@ -1052,18 +1236,22 @@
         if (e.key === 'Home') this.go(0);
         if (e.key === 'End') this.go(this.total - 1);
       },
-      onSwipe(x) {
-        if (this.touchX === null) return;
-        const dx = x - this.touchX;
-        if (Math.abs(dx) > 50) this.go(this.i + (dx < 0 ? 1 : -1));
+      tStart(e) { this.touchX = e.touches[0].clientX; this.touchY = e.touches[0].clientY; },
+      // 1 = next, -1 = previous, 0 = not a swipe. Only clearly sideways moves count, so scrolling a long slide never flips it.
+      swipeDir(e) {
+        if (this.touchX === null) return 0;
+        const t = e.changedTouches[0], dx = t.clientX - this.touchX, dy = t.clientY - this.touchY;
         this.touchX = null;
+        return Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5 ? (dx < 0 ? 1 : -1) : 0;
+      },
+      onSwipe(e) {
+        const d = this.zoom ? 0 : this.swipeDir(e);
+        if (d) this.go(this.i + d);
       },
       // Swipe on a stepped graphic (clock, wheel) moves one step instead of changing slide.
-      stepSwipe(x, step) {
-        if (this.touchX === null) return;
-        const dx = x - this.touchX;
-        if (Math.abs(dx) > 40) step(dx < 0 ? 1 : -1);
-        this.touchX = null;
+      stepSwipe(e, step) {
+        const d = this.swipeDir(e);
+        if (d) step(d);
       },
       async share() {
         const url = location.origin + location.pathname + '?slide=' + (this.i + 1);
