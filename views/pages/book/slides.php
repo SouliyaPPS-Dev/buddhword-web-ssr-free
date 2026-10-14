@@ -37,7 +37,9 @@
   @media (prefers-reduced-motion: reduce) { .sky * { animation: none !important; } }
   .slide-stage { flex: 1; min-height: 0; position: relative; }
   .slide { position: absolute; inset: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: rgba(212,175,55,.45) transparent; }
-  .slide > * { margin: auto; }
+  .slide > * { margin: auto; zoom: var(--z, 1); }
+  /* The deck handles pinch itself, so the browser never zooms the page out of fullscreen */
+  .deck { touch-action: pan-x pan-y; }
   .deck-controls { background: linear-gradient(to top, rgba(5,6,13,.96) 55%, rgba(5,6,13,0)); }
   .lux-title { font-weight: 800; line-height: 1.25; }
   .lux-gold { background: linear-gradient(100deg, #b8892b 0%, #f5d98b 45%, #d4af37 70%, #a87a1f 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
@@ -125,6 +127,11 @@
         </a>
         <div class="flex items-center gap-3">
           <span><span x-text="String(i+1).padStart(2,'0')"></span> / <span x-text="String(total).padStart(2,'0')"></span></span>
+          <div class="flex items-center rounded-full lux-card text-[#f5d98b]">
+            <button data-fs @click="zoomBy(-1)" :disabled="scale<=minScale" class="w-9 h-9 rounded-full flex items-center justify-center hover:bg-[#d4af37]/20 disabled:opacity-30 transition-all" title="ຫຍໍ້ອອກ (Ctrl −)" aria-label="ຫຍໍ້ອອກ"><i class="fas fa-magnifying-glass-minus"></i></button>
+            <button data-fs @click="zoomTo(1)" class="hidden sm:block w-11 text-center tabular-nums hover:text-white transition-colors" title="ຂະໜາດປົກກະຕິ (Ctrl 0)" x-text="Math.round(scale*100) + '%'"></button>
+            <button data-fs @click="zoomBy(1)" :disabled="scale>=maxScale" class="w-9 h-9 rounded-full flex items-center justify-center hover:bg-[#d4af37]/20 disabled:opacity-30 transition-all" title="ຂະຫຍາຍ (Ctrl +)" aria-label="ຂະຫຍາຍ"><i class="fas fa-magnifying-glass-plus"></i></button>
+          </div>
           <button @click="share()" class="w-9 h-9 rounded-full lux-card flex items-center justify-center text-[#f5d98b] hover:bg-[#d4af37]/20 transition-all" title="ແບ່ງປັນລິ້ງ"><i class="fas fa-share-nodes"></i></button>
           <button data-fs @click="toggleFullscreen()" class="w-9 h-9 rounded-full lux-card flex items-center justify-center text-[#f5d98b] hover:bg-[#d4af37]/20 transition-all" :title="fullscreen ? 'ອອກຈາກເຕັມຈໍ' : 'ເຕັມຈໍ'">
             <i class="fas" :class="fullscreen ? 'fa-compress' : 'fa-expand'"></i>
@@ -132,7 +139,7 @@
         </div>
       </div>
 
-      <div class="slide-stage">
+      <div class="slide-stage" :style="`--z:${scale}`">
         <?php
         // Layer badges: each "time & mind" slide states up front whether it shows measured fact or an analogy for reflection.
         $sciTag = '<span class="layer layer-sci"><i class="fas fa-flask"></i>ວິທະຍາສາດ · ຂໍ້ເທັດຈິງ</span>';
@@ -1079,6 +1086,12 @@
       touchY: null,
       fullscreen: false,
       zoom: null,
+      // Slide zoom (separate from the image lightbox above). Kept inside the page so fullscreen stays on.
+      scale: 1,
+      minScale: 0.5,
+      maxScale: 3,
+      pinch: null,
+      pinched: false,
       // Paticcasamuppada clock: `step` only grows so the hand never spins backwards past 12.
       step: 0,
       clockView: 'live',
@@ -1198,7 +1211,35 @@
       titles: ['ປັດຈຸບັນທີ່ເຮົາຮັບຮູ້', 'ແສງຈາກດວງດາວ', 'ແສງດາວ ກັບ ຈິດ', 'ຈິດເກີດ-ດັບ ທຸກຂະນະ', 'ຂັນ 5 ກັບ ອຸປະມາແສງດາວ', 'ໂມງປະຕິຈຈະສະມຸບບາດ', 'ກາລະ 3: ເຫດ ແລະ ຜົນ', 'ວົງລໍ້ ກິເລສ · ກຳ · ວິບາກ', 'ເວທະນາ → ຕັນຫາ', 'ຖືກເວລາກິນ · ກິນເວລາ', 'ເວລາ ກັບ ຈິດ', 'ສະຫຼຸບ', 'ແຫຼ່ງອ້າງອີງ'],
       get total() { return this.titles.length; },
 
+      zoomTo(z) { this.scale = Math.round(Math.min(this.maxScale, Math.max(this.minScale, z)) * 100) / 100; },
+      zoomBy(dir) { this.zoomTo(this.scale + dir * 0.1); },
+      initZoom() {
+        // Alpine runs init() itself and x-init runs it again; listeners must only be added once.
+        if (this.zoomReady) return;
+        this.zoomReady = true;
+        const dist = t => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+        // Ctrl/Cmd + wheel (also a trackpad pinch on macOS) zooms the slide instead of the browser.
+        addEventListener('wheel', e => {
+          if (!e.ctrlKey && !e.metaKey) return;
+          e.preventDefault();
+          this.zoomTo(this.scale * Math.exp(-e.deltaY / 300));
+        }, { passive: false });
+        // Two-finger pinch. Capture phase, because the stepped graphics stop touch events from bubbling.
+        addEventListener('touchstart', e => {
+          if (e.touches.length === 1) this.pinched = false;
+          if (e.touches.length === 2) { this.pinch = { d: dist(e.touches), z: this.scale }; this.pinched = true; }
+        }, { capture: true, passive: true });
+        addEventListener('touchmove', e => {
+          if (!this.pinch || e.touches.length !== 2) return;
+          e.preventDefault();
+          this.zoomTo(this.pinch.z * dist(e.touches) / this.pinch.d);
+        }, { capture: true, passive: false });
+        addEventListener('touchend', e => { if (e.touches.length < 2) this.pinch = null; }, { capture: true, passive: true });
+        // Safari's own pinch gesture would zoom the whole page.
+        ['gesturestart', 'gesturechange'].forEach(t => addEventListener(t, e => e.preventDefault(), { passive: false }));
+      },
       init() {
+        this.initZoom();
         const q = new URLSearchParams(location.search);
         const s = parseInt(q.get('slide'), 10);
         if (s >= 1 && s <= this.total) this.i = s - 1;
@@ -1231,6 +1272,11 @@
       onKey(e) {
         if (['INPUT', 'TEXTAREA'].includes(e.target.tagName) || e.target.isContentEditable) return;
         if (e.key === 'Escape' && this.zoom) { this.zoom = null; return; }
+        if (e.ctrlKey || e.metaKey) {
+          const z = { '+': 1, '=': 1, '-': -1, '_': -1, '0': 0 }[e.key];
+          if (z !== undefined) { e.preventDefault(); z ? this.zoomBy(z) : this.zoomTo(1); }
+          return;
+        }
         if (['ArrowRight', 'PageDown', ' '].includes(e.key)) { e.preventDefault(); this.go(this.i + 1); }
         if (['ArrowLeft', 'PageUp'].includes(e.key)) { e.preventDefault(); this.go(this.i - 1); }
         if (e.key === 'Home') this.go(0);
@@ -1240,6 +1286,7 @@
       // 1 = next, -1 = previous, 0 = not a swipe. Only clearly sideways moves count, so scrolling a long slide never flips it.
       swipeDir(e) {
         if (this.touchX === null) return 0;
+        if (this.pinched || this.scale > 1) { this.touchX = null; return 0; }
         const t = e.changedTouches[0], dx = t.clientX - this.touchX, dy = t.clientY - this.touchY;
         this.touchX = null;
         return Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5 ? (dx < 0 ? 1 : -1) : 0;
