@@ -59,7 +59,24 @@ class BookController {
             'image' => absoluteUrl('assets/images/paticca-wheel-cover.png'),
             'canonical' => canonicalUrl(),
         ];
+        $narration = self::slidesNarration();
         require __DIR__ . '/../../views/pages/book/slides.php';
+    }
+
+    // [lang][slide] => [['t' => sentence, 'a' => pre-generated mp3 URL or null], ...].
+    // A missing file (sentence edited, script not re-run) falls back to /api/tts/synthesize in the browser.
+    public static function slidesNarration() {
+        require_once __DIR__ . '/../Data/slides_audio.php';
+        $out = [];
+        foreach (require __DIR__ . '/../Data/slides_narration.php' as $lang => $slides) {
+            foreach ($slides as $s => $lines) {
+                foreach ($lines as $text) {
+                    $file = slidesAudioFile($lang, $text);
+                    $out[$lang][$s][] = ['t' => $text, 'a' => is_file(SLIDES_AUDIO_DIR . '/' . $file) ? url('assets/audio/slides/' . $file) : null];
+                }
+            }
+        }
+        return $out;
     }
 
     public function show($id) {

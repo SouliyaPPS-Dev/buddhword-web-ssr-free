@@ -19,6 +19,7 @@
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
 <style>
   html, body { margin: 0; height: 100%; background: #05060d; overflow: hidden; }
+  [x-cloak] { display: none !important; }
 
   .deck { --gold: #d4af37; --gold-2: #f5d98b; background: radial-gradient(1200px 600px at 85% -10%, rgba(212,175,55,.14), transparent 60%), radial-gradient(900px 500px at -10% 110%, rgba(99,102,241,.16), transparent 60%), linear-gradient(160deg, #070a18 0%, #05060d 60%, #0d0b07 100%); color: #f4f1ea; }
   .deck { display: flex; flex-direction: column; height: max(620px, calc(100dvh - 190px)); font-family: 'Noto Sans Lao', 'Plus Jakarta Sans', sans-serif; }
@@ -76,6 +77,11 @@
   .shake { animation: shake .35s ease-in-out infinite; }
   @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-2px); } 75% { transform: translateX(2px); } }
 
+  /* SN 12.61 monkey: holds one branch (bright), lets go (dim), the next one takes over. */
+  .grab { animation: grab 2.4s ease-in-out infinite; opacity: .3; }
+  @keyframes grab { 0%, 100% { opacity: .3; transform: translate(-50%, 0) scale(.85); } 10%, 28% { opacity: 1; transform: translate(-50%, -4px) scale(1.1); filter: drop-shadow(0 0 8px rgba(245,217,139,.7)); } 40% { opacity: .3; transform: translate(-50%, 0) scale(.85); } }
+  @keyframes blink { 0%, 100% { opacity: .12; transform: scale(.7); } 12% { opacity: 1; transform: scale(1); } 30% { opacity: .12; transform: scale(.7); } }
+
   @media print {
     @page { size: A4 landscape; margin: 0; }
     header, footer, .no-print, [x-data="chatbot()"], .fixed { display: none !important; }
@@ -125,12 +131,19 @@
           <span class="w-9 h-9 shrink-0 rounded-full lux-card flex items-center justify-center text-[#f5d98b]"><i class="fas fa-arrow-left"></i></span>
           <span class="truncate">ຄຳສອນພຸດທະ<span class="text-[#d4af37]">.</span> — <span x-text="titles[i]"></span></span>
         </a>
-        <div class="flex items-center gap-3">
-          <span><span x-text="String(i+1).padStart(2,'0')"></span> / <span x-text="String(total).padStart(2,'0')"></span></span>
+        <div class="flex items-center gap-1.5 sm:gap-3">
+          <span class="whitespace-nowrap"><span x-text="String(i+1).padStart(2,'0')"></span> / <span x-text="String(total).padStart(2,'0')"></span></span>
           <div class="flex items-center rounded-full lux-card text-[#f5d98b]">
             <button data-fs @click="zoomBy(-1)" :disabled="scale<=minScale" class="w-9 h-9 rounded-full flex items-center justify-center hover:bg-[#d4af37]/20 disabled:opacity-30 transition-all" title="ຫຍໍ້ອອກ (Ctrl −)" aria-label="ຫຍໍ້ອອກ"><i class="fas fa-magnifying-glass-minus"></i></button>
             <button data-fs @click="zoomTo(1)" class="hidden sm:block w-11 text-center tabular-nums hover:text-white transition-colors" title="ຂະໜາດປົກກະຕິ (Ctrl 0)" x-text="Math.round(scale*100) + '%'"></button>
             <button data-fs @click="zoomBy(1)" :disabled="scale>=maxScale" class="w-9 h-9 rounded-full flex items-center justify-center hover:bg-[#d4af37]/20 disabled:opacity-30 transition-all" title="ຂະຫຍາຍ (Ctrl +)" aria-label="ຂະຫຍາຍ"><i class="fas fa-magnifying-glass-plus"></i></button>
+          </div>
+          <div class="flex items-center rounded-full lux-card p-0.5">
+            <button @click="toggleNarration()" class="h-8 pl-2.5 pr-3 rounded-full flex items-center gap-1.5 text-[11px] font-black transition-all"
+                    :class="narr.on && !narr.paused ? 'lux-btn' : 'text-[#f5d98b] hover:bg-[#d4af37]/20'" :title="t('narrate')" :aria-label="narr.on && !narr.paused ? t('pause') : t('play')">
+              <i class="fas" :class="narr.on && !narr.paused ? 'fa-pause' : 'fa-play'"></i><span x-text="narr.on && !narr.paused ? t('pause') : t('play')"></span>
+            </button>
+            <button data-fs @click="setNarrLang(narr.lang === 'lo' ? 'th' : 'lo')" class="px-2.5 h-8 rounded-full text-[11px] font-black text-[#f5d98b]" :title="t('narrLang')" x-text="NARR_LABELS[narr.lang]"></button>
           </div>
           <button @click="share()" class="w-9 h-9 rounded-full lux-card flex items-center justify-center text-[#f5d98b] hover:bg-[#d4af37]/20 transition-all" title="ແບ່ງປັນລິ້ງ"><i class="fas fa-share-nodes"></i></button>
           <button data-fs @click="toggleFullscreen()" class="w-9 h-9 rounded-full lux-card flex items-center justify-center text-[#f5d98b] hover:bg-[#d4af37]/20 transition-all" :title="fullscreen ? 'ອອກຈາກເຕັມຈໍ' : 'ເຕັມຈໍ'">
@@ -345,15 +358,92 @@
               </div>
             </div>
             <p class="text-xs text-white/45 mt-4 max-w-4xl"><i class="fas fa-circle-info text-[#d4af37] mr-1.5"></i>ການເກີດ-ດັບຂອງຈິດ ເປັນຄຳອະທິບາຍທາງພຸດທະທຳ (ອະນິດຈັງ) — ການປະມວນຜົນຂອງສະໝອງ ເປັນເລື່ອງທີ່ວິທະຍາສາດສຶກສາຕ່າງຫາກ. ທັງສອງກ່ຽວກັບການປ່ຽນແປງ ແຕ່ບໍ່ຄວນຖືວ່າເປັນສິ່ງດຽວກັນ.</p>
+            <button @click="go(4)" class="lux-chip mt-3 px-4 py-2 rounded-full text-xs sm:text-sm font-bold"><i class="fas fa-book-open mr-1.5"></i>ພຣະພຸດທະເຈົ້າ ປຽບຈິດທີ່ເກີດ-ດັບນີ້ ກັບ “ລີງຈັບກິ່ງໄມ້” — ເບິ່ງ 3 ອຸປະມາ ຈາກພຣະສູດ <i class="fas fa-arrow-right ml-1"></i></button>
+          </div>
+        </div>
+
+        <!-- 7b. Three sutta similes: monkey (SN 12.61), fire (MN 38), seed (AN 3.76 · SN 12.38) -->
+        <div class="slide flex px-4 sm:px-16 py-5 sm:py-10" x-show="i===4" x-transition.opacity.duration.500ms>
+          <div class="w-full">
+            <div class="flex flex-wrap items-center gap-2"><p class="kicker text-xs sm:text-sm font-bold text-[#d4af37] mr-1">ເວລາກັບຈິດ · ຕອນທີ 5</p><?php echo $dharmaTag; ?></div>
+            <h2 class="lux-title text-2xl sm:text-4xl mt-3 leading-snug">ຈິດ · ມະໂນ · ວິນຍານ <span class="lux-gold">ໃນ 3 ອຸປະມາ ຈາກພຣະສູດ</span></h2>
+            <p class="text-white/65 mt-2 max-w-4xl text-sm sm:text-base">ຕໍ່ຈາກ <button @click="go(3)" class="font-bold text-[#f5d98b] underline underline-offset-2" x-text="titles[3]"></button> (ຕົວຢ່າງເດີມ: ຂໍ້ຄວາມໃນໂທລະສັບ) — ພຣະພຸດທະເຈົ້າ ຊົງໃຊ້ 3 ພາບ ອະທິບາຍວ່າ ຈິດ <b class="text-[#f5d98b]">ເກີດ-ດັບ</b> ແນວໃດ, <b class="text-[#f5d98b]">ອາໄສຫຍັງ</b> ຈຶ່ງເກີດ, ແລະ <b class="text-[#f5d98b]">ເງື່ອນໄຂເກົ່າ</b> ສົ່ງຜົນແນວໃດ. ຫຼັກດຽວກັນນີ້ ໃຊ້ໄດ້ທັງ <b>ຂະນະຈິດໃນຊີວິດປະຈຳວັນ</b> ແລະ <b>ການເກີດຂ້າມພົບ</b>.</p>
+
+            <div class="grid md:grid-cols-3 gap-3 sm:gap-4 mt-5">
+              <!-- 1. Monkey: grabs one branch, lets go, grabs the next -->
+              <div class="lux-card rounded-[24px] p-4 sm:p-5 flex flex-col rise">
+                <div class="flex items-center gap-2"><span class="w-8 h-8 rounded-full lux-btn flex items-center justify-center text-sm font-black">1</span><p class="font-black text-sm sm:text-base">ລີງ ຈັບກິ່ງໄມ້</p></div>
+                <div class="relative h-24 mt-3 rounded-2xl bg-white/[.03] border border-white/10 overflow-hidden" aria-hidden="true">
+                  <svg viewBox="0 0 300 96" preserveAspectRatio="none" class="absolute inset-0 w-full h-full" fill="none" stroke-linecap="round">
+                    <path d="M0 18 H300" stroke="#8b6b3d" stroke-width="5"/>
+                    <?php foreach ([50, 150, 250] as $x): ?>
+                    <path d="M<?php echo $x; ?> 18 q-6 22 0 40" stroke="#8b6b3d" stroke-width="3"/>
+                    <ellipse cx="<?php echo $x - 14; ?>" cy="14" rx="9" ry="4" fill="#4d7c4a"/><ellipse cx="<?php echo $x + 14; ?>" cy="12" rx="9" ry="4" fill="#4d7c4a"/>
+                    <?php endforeach; ?>
+                  </svg>
+                  <?php foreach ([16.7, 50, 83.3] as $k => $x): ?>
+                  <span class="grab absolute top-[42%] text-3xl sm:text-4xl" style="left:<?php echo $x; ?>%;animation-delay:<?php echo $k * 0.8; ?>s">🐒</span>
+                  <?php endforeach; ?>
+                </div>
+                <p class="text-[11px] text-center text-white/45 mt-1">ຈັບ → ປ່ອຍ → ຈັບກິ່ງໃໝ່ → ປ່ອຍ…</p>
+                <p class="text-xs sm:text-sm text-white/80 mt-2 leading-relaxed"><b class="text-[#d4af37]">ພຣະສູດ (ຖອດຄວາມ):</b> ສິ່ງທີ່ເອີ້ນວ່າ ຈິດ ມະໂນ ວິນຍານ ເກີດຂຶ້ນເປັນອັນໜຶ່ງ ດັບໄປເປັນອີກອັນໜຶ່ງ ທັງກາງເວັນ ແລະ ກາງຄືນ — ເໝືອນລີງໃນປ່າ ຈັບກິ່ງໜຶ່ງ ປ່ອຍ ແລ້ວຈັບກິ່ງໃໝ່.</p>
+                <p class="text-[11px] sm:text-xs text-white/55 mt-2"><i class="fas fa-mobile-screen text-sky-300 mr-1"></i><b class="text-sky-200">ໃນຊີວິດ</b>: ເຫັນຂໍ້ຄວາມ → ດີໃຈ → ນຶກເລື່ອງອື່ນ — ແຕ່ລະຂະນະ ຄື “ກິ່ງໃໝ່” ບໍ່ແມ່ນຈິດດວງເກົ່າ ທີ່ຍ້າຍໄປ.</p>
+                <p class="mt-auto pt-3 text-xs sm:text-sm font-bold text-[#f5d98b]"><i class="fas fa-arrow-right mr-1.5"></i>ຈິດ ບໍ່ທ່ຽງ: ບໍ່ມີ “ຈິດກ້ອນເດີມ” ຢູ່ຕະຫຼອດ</p>
+              </div>
+
+              <!-- 2. Fire is named by its fuel; consciousness by its condition -->
+              <div class="lux-card rounded-[24px] p-4 sm:p-5 flex flex-col rise" style="animation-delay:.12s">
+                <div class="flex items-center gap-2"><span class="w-8 h-8 rounded-full lux-btn flex items-center justify-center text-sm font-black">2</span><p class="font-black text-sm sm:text-base">ໄຟ ອາໄສເຊື້ອ</p></div>
+                <div class="h-24 mt-3 rounded-2xl bg-white/[.03] border border-white/10 grid grid-cols-[auto_auto_1fr] content-center items-center gap-x-2 gap-y-1 px-3 text-[11px] sm:text-xs font-bold">
+                  <span>🪵 ໄມ້</span><i class="fas fa-arrow-right text-[#d4af37]"></i><span class="text-orange-300">🔥 “ໄຟໄມ້”</span>
+                  <span>🌾 ຫຍ້າ</span><i class="fas fa-arrow-right text-[#d4af37]"></i><span class="text-orange-300">🔥 “ໄຟຫຍ້າ”</span>
+                  <span>👁️ ຕາ+ຮູບ</span><i class="fas fa-arrow-right text-[#d4af37]"></i><span class="text-[#f5d98b]">✦ “ຈັກຂຸວິນຍານ”</span>
+                </div>
+                <p class="text-[11px] text-center text-white/45 mt-1">ໄຟ ເອີ້ນຕາມເຊື້ອ — ວິນຍານ ເອີ້ນຕາມປັດໄຈ</p>
+                <p class="text-xs sm:text-sm text-white/80 mt-2 leading-relaxed"><b class="text-[#d4af37]">ພຣະສູດ (ຖອດຄວາມ):</b> ພິກຂຸສາຕິ ເຫັນຜິດວ່າ “ວິນຍານດວງນີ້ແຫຼະ ທ່ອງທ່ຽວໄປ ບໍ່ແມ່ນດວງອື່ນ”. ພຣະພຸດທະເຈົ້າ ແກ້ວ່າ ວິນຍານ ເກີດເພາະອາໄສປັດໄຈ — ບໍ່ມີປັດໄຈ ວິນຍານກໍບໍ່ເກີດ.</p>
+                <p class="text-[11px] sm:text-xs text-white/55 mt-2"><i class="fas fa-fire-flame-simple text-orange-300 mr-1"></i><b>ອຸປະມາເສີມ</b>: ຕະກຽງ ລຸກຢູ່ໄດ້ເພາະນ້ຳມັນ ແລະ ໄສ້ — ບໍ່ເຕີມນ້ຳມັນ ກໍດັບເອງ. ໄຟ ບໍ່ໄດ້ຍ້າຍໄປໃສ.</p>
+                <p class="text-[11px] sm:text-xs text-white/55 mt-2"><i class="fas fa-mobile-screen text-sky-300 mr-1"></i><b class="text-sky-200">ໃນຊີວິດ</b>: ເບິ່ງຈໍ → ວິນຍານທາງຕາ · ໄດ້ຍິນສຽງແຈ້ງເຕືອນ → ວິນຍານທາງຫູ — ບໍ່ແມ່ນ “ຜູ້ຮູ້” ຄົນດຽວ ຍ້າຍຈາກຕາໄປຫູ.</p>
+                <p class="mt-auto pt-3 text-xs sm:text-sm font-bold text-[#f5d98b]"><i class="fas fa-arrow-right mr-1.5"></i>ວິນຍານ ບໍ່ແມ່ນ “ຂອງເດີມ” ທີ່ເດີນທາງໄປເກີດ</p>
+              </div>
+
+              <!-- 3. Seed: kamma = field, consciousness = seed, craving = moisture -->
+              <div class="lux-card rounded-[24px] p-4 sm:p-5 flex flex-col rise" style="animation-delay:.24s">
+                <div class="flex items-center gap-2"><span class="w-8 h-8 rounded-full lux-btn flex items-center justify-center text-sm font-black">3</span><p class="font-black text-sm sm:text-base">ເມັດພືດ ໃນນາ</p></div>
+                <div class="h-24 mt-3 rounded-2xl bg-white/[.03] border border-white/10 grid grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr] items-center px-2 text-center">
+                  <?php foreach ([['🟫', 'ກຳ', 'ນາ'], ['🌰', 'ວິນຍານ', 'ເມັດພືດ'], ['💧', 'ຕັນຫາ', 'ຄວາມຊຸ່ມ'], ['🌱', 'ພົບໃໝ່', 'ງອກ']] as $k => $s): ?>
+                  <div><div class="text-xl sm:text-2xl"><?php echo $s[0]; ?></div><p class="text-[11px] sm:text-xs font-black text-[#f5d98b] mt-0.5"><?php echo $s[1]; ?></p><p class="text-[10px] text-white/45">= <?php echo $s[2]; ?></p></div>
+                  <?php if ($k < 2): ?><span class="text-[#d4af37] font-black">+</span><?php elseif ($k === 2): ?><i class="fas fa-arrow-right text-[#d4af37] text-xs"></i><?php endif; ?>
+                  <?php endforeach; ?>
+                </div>
+                <p class="text-[11px] text-center text-white/45 mt-1">ເງື່ອນໄຂຄົບ ຈຶ່ງງອກ</p>
+                <p class="text-xs sm:text-sm text-white/80 mt-2 leading-relaxed"><b class="text-[#d4af37]">ພຣະສູດ (ຖອດຄວາມ):</b> ກຳເປັນນາ ວິນຍານເປັນເມັດພືດ ຕັນຫາເປັນຄວາມຊຸ່ມຊື່ນ — ສຳລັບຜູ້ມີອະວິຊາ ແລະ ຕັນຫາ ວິນຍານຈຶ່ງຕັ້ງຢູ່ ພົບໃໝ່ຈຶ່ງມີ.</p>
+                <p class="text-[11px] sm:text-xs text-white/55 mt-2"><i class="fas fa-seedling text-emerald-300 mr-1"></i><b>ເສີມ</b>: ສິ່ງທີ່ຕັ້ງໃຈ ຄິດປຸງແຕ່ງ ແລະ ນອນເນື່ອງຢູ່ (ອະນຸໄສ) ເປັນບ່ອນຕັ້ງຂອງວິນຍານ — ບໍ່ມີ ກໍບໍ່ມີບ່ອນຕັ້ງ ບໍ່ງອກງາມ.</p>
+                <p class="text-[11px] sm:text-xs text-white/55 mt-2"><i class="fas fa-mobile-screen text-sky-300 mr-1"></i><b class="text-sky-200">ໃນຊີວິດ</b>: ເຄີຍຜິດຫວັງກັບໂທລະສັບຍີ່ຫໍ້ໜຶ່ງ ແລະ ຍັງຄຽດຄ້າງຢູ່ → ເຫັນອີກ ຄວາມບໍ່ມັກ ກໍ “ງອກ” ຂຶ້ນທັນທີ — ເງື່ອນໄຂເກົ່າ ສົ່ງຜົນ ໂດຍບໍ່ມີຫຍັງເດີນທາງມາ.</p>
+                <p class="mt-auto pt-3 text-xs sm:text-sm font-bold text-[#f5d98b]"><i class="fas fa-arrow-right mr-1.5"></i>ການເກີດ ອາໄສເງື່ອນໄຂ — ບໍ່ແມ່ນວິນຍານຖາວອນ</p>
+              </div>
+            </div>
+
+            <!-- One-line synthesis + links onward through the deck -->
+            <div class="rounded-3xl p-4 mt-4 bg-[#d4af37]/10 border border-dashed border-[#d4af37]/45 rise" style="animation-delay:.4s">
+              <p class="text-sm sm:text-base text-white/90 leading-relaxed"><i class="fas fa-link text-[#d4af37] mr-1.5"></i>ສະຫຼຸບ: <b class="text-[#f5d98b]">ບໍ່ມີ “ຜູ້ຮູ້” ດວງເດີມ ເດີນທາງ</b> — ທັງໃນແຕ່ລະຂະນະ ແລະ ຂ້າມພົບ ມີແຕ່ເຫດປັດໄຈ ເກີດ-ດັບ ສືບຕໍ່ກັນ. ລີງ = <b>ເກີດ-ດັບ</b> · ໄຟ = <b>ອາໄສປັດໄຈ</b> · ເມັດພືດ = <b>ເງື່ອນໄຂເກົ່າ ສົ່ງຜົນ</b>.</p>
+              <button @click="go(5)" class="mt-3 w-full text-left rounded-2xl px-4 py-2.5 bg-white/5 border border-white/15 text-xs sm:text-sm text-white/80 hover:bg-white/10 transition"><i class="fas fa-circle-question text-[#d4af37] mr-1.5"></i>ຄຳຖາມຕໍ່ໄປ: ຖ້າບໍ່ມີຫຍັງເດີນທາງ ເປັນຫຍັງ <b class="text-[#f5d98b]">ອະດີດ ຍັງສົ່ງຜົນເຖິງປັດຈຸບັນ</b>? <span class="font-bold text-[#f5d98b] whitespace-nowrap">→ <span x-text="'6 · ' + titles[5]"></span></span></button>
+              <div class="flex flex-wrap items-center gap-2 mt-3 text-xs font-bold">
+                <span class="text-white/50">ເບິ່ງຕໍ່:</span>
+                <?php foreach ([[6, 'fa-dharmachakra'], [8, 'fa-arrows-spin'], [9, 'fa-droplet']] as [$n, $ic]): ?>
+                <button @click="go(<?php echo $n; ?>)" class="lux-chip px-3 py-1.5 rounded-full"><i class="fas <?php echo $ic; ?> mr-1"></i><span x-text="'<?php echo $n + 1; ?> · ' + titles[<?php echo $n; ?>]"></span></button>
+                <?php endforeach; ?>
+              </div>
+            </div>
+            <p class="text-[11px] text-white/40 mt-3"><i class="fas fa-circle-info text-[#d4af37] mr-1"></i>ຂໍ້ຄວາມ “ພຣະສູດ” ເປັນການຖອດຄວາມໂດຍສັງເຂບ ບໍ່ແມ່ນຄຳແປຄຳຕໍ່ຄຳ — ເລກສູດ ແລະ ລິ້ງຕົ້ນສະບັບ ຢູ່ໃນສະໄລ <button @click="go(13)" class="underline underline-offset-2">ແຫຼ່ງອ້າງອີງ</button>. ອຸປະມາແຕ່ລະອັນ ໃຊ້ອະທິບາຍຄົນລະແງ່ ບໍ່ຄວນຕີຄວາມເກີນບໍລິບົດຂອງພຣະສູດ.</p>
           </div>
         </div>
 
         <!-- 8. Five aggregates & the dead star -->
-        <div class="slide flex px-4 sm:px-16 py-5 sm:py-10" x-show="i===4" x-transition.opacity.duration.500ms>
+        <div class="slide flex px-4 sm:px-16 py-5 sm:py-10" x-show="i===5" x-transition.opacity.duration.500ms>
           <div class="w-full">
-            <div class="flex flex-wrap items-center gap-2"><p class="kicker text-xs sm:text-sm font-bold text-[#d4af37] mr-1">ເວລາກັບຈິດ · ຕອນທີ 5</p><?php echo $dharmaTag; ?></div>
-            <h2 class="lux-title text-3xl sm:text-5xl mt-3">ຂັນ 5 <span class="lux-gold">ກັບ ອຸປະມາແສງດາວ</span></h2>
-            <p class="text-white/65 mt-3 max-w-3xl text-sm sm:text-base">ຕົວຢ່າງ: <b class="text-[#f5d98b]">ເຫັນໂທລະສັບລຸ້ນໃໝ່</b> — ປະສົບການດຽວ ແຍກເບິ່ງໄດ້ເປັນ 5 ກອງ:</p>
+            <div class="flex flex-wrap items-center gap-2"><p class="kicker text-xs sm:text-sm font-bold text-[#d4af37] mr-1">ເວລາກັບຈິດ · ຕອນທີ 6</p><?php echo $dharmaTag; ?></div>
+            <h2 class="lux-title text-3xl sm:text-4xl mt-3">ຖ້າບໍ່ມີຫຍັງເດີນທາງ ເປັນຫຍັງອະດີດ ຍັງສົ່ງຜົນເຖິງດຽວນີ້ ? <span class="lux-gold">(ຂັນ 5)</span></h2>
+            <p class="text-white/65 mt-3 max-w-3xl text-sm sm:text-base">ຕໍ່ຈາກ <button @click="go(4)" class="font-bold text-[#f5d98b] underline underline-offset-2">ອຸປະມາເມັດພືດ</button>: ເງື່ອນໄຂເກົ່າ ສົ່ງຜົນແນວໃດ? ມາເບິ່ງໃກ້ໆ ດ້ວຍຕົວຢ່າງໂທລະສັບເດີມ — <b class="text-[#f5d98b]">ເຫັນໂທລະສັບລຸ້ນໃໝ່</b>: ປະສົບການດຽວ ແຍກເບິ່ງໄດ້ເປັນ 5 ກອງ:</p>
             <!-- One experience, five aggregates -->
             <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-3 mt-4">
               <?php foreach ([['fa-mobile-screen', 'ຮູບ', 'ໂທລະສັບ ແລະ ຮ່າງກາຍ ທີ່ເຫັນ'], ['fa-heart', 'ເວທະນາ', 'ຮູ້ສຶກພໍໃຈ'], ['fa-tag', 'ສັນຍາ', 'ຈຳໄດ້ວ່າ “ຍີ່ຫໍ້ທີ່ມັກ”'], ['fa-gears', 'ສັງຂານ', 'ຄິດ “ຊື້ດີບໍ່?” ເຈດຕະນາເກີດ'], ['fa-eye', 'ວິນຍານ', 'ການຮັບຮູ້ທາງຕາ']] as $k => $kh): ?>
@@ -368,7 +458,7 @@
               <i class="fas fa-clock-rotate-left text-amber-300 text-xl mt-0.5"></i>
               <div class="text-sm sm:text-base text-white/85 leading-relaxed">
                 <p>ເຄີຍຊື້ໂທລະສັບຍີ່ຫໍ້ນີ້ ແລ້ວຜິດຫວັງ → ເຫັນອີກເທື່ອ ກໍ <b>ບໍ່ມັກຂຶ້ນມາທັນທີ</b>. ປະສົບການທີ່ຜ່ານໄປແລ້ວ ຍັງ <b class="text-amber-200">ເປັນເງື່ອນໄຂ</b> ໃຫ້ຄວາມຄິດ ແລະ ຄວາມຮູ້ສຶກຕອນນີ້ — ຄ້າຍແສງທີ່ອອກເດີນທາງໃນອະດີດ ແຕ່ມາຮອດເຮົາຕອນນີ້.</p>
-                <p class="text-xs sm:text-sm text-white/55 mt-2"><i class="fas fa-triangle-exclamation text-amber-300 mr-1"></i>ນີ້ເປັນພຽງອຸປະມາ: ບໍ່ແມ່ນ “ຈິດດວງເກົ່າ” ທີ່ເດີນທາງມາຈາກອະດີດຄືລຳແສງ — ແຕ່ແມ່ນເຫດປັດໄຈເກົ່າ (ຄວາມຈຳ, ນິໄສ) ທີ່ສົ່ງຜົນຕໍ່ປັດຈຸບັນ.</p>
+                <p class="text-xs sm:text-sm text-white/55 mt-2"><i class="fas fa-triangle-exclamation text-amber-300 mr-1"></i>ແສງດາວ ໃຊ້ເປັນອຸປະມາໄດ້ <b>ເຄິ່ງດຽວ</b>: <span class="text-emerald-300">✔</span> ສິ່ງທີ່ປາກົດຕອນນີ້ ມີເຫດມາຈາກອະດີດ (ຄືເມັດພືດ) · <span class="text-rose-300">✘</span> ແຕ່ຈິດ ບໍ່ໄດ້ເດີນທາງມາຄືລຳແສງ — ມັນເກີດໃໝ່ທຸກຂະນະ (ຄືລີງ) ເພາະອາໄສປັດໄຈ (ຄືໄຟ). ສິ່ງທີ່ສືບຕໍ່ ຄືເຫດປັດໄຈ (ຄວາມຈຳ, ນິໄສ, ອະນຸໄສ). <button @click="go(4)" class="underline underline-offset-2 text-[#f5d98b]">(ເບິ່ງສະໄລ 5)</button></p>
               </div>
             </div>
             <p class="font-bold text-base sm:text-lg mt-8">ສິ່ງທີ່ອຸປະມານີ້ຊ່ວຍໃຫ້ເຫັນຊັດ:</p>
@@ -398,9 +488,9 @@
           'future' => ['ອະນາຄົດຜົນ', '#c4b5fd'],
         ]; ?>
         <!-- 9. Paticcasamuppada clock -->
-        <div class="slide flex px-4 sm:px-16 py-5 sm:py-10" x-show="i===5" x-transition.opacity.duration.500ms>
+        <div class="slide flex px-4 sm:px-16 py-5 sm:py-10" x-show="i===6" x-transition.opacity.duration.500ms>
           <div class="w-full">
-            <div class="flex flex-wrap items-center gap-2"><p class="kicker text-xs sm:text-sm font-bold text-[#d4af37] mr-1">ເວລາກັບຈິດ · ຕອນທີ 6</p><?php echo $dharmaTag; ?></div>
+            <div class="flex flex-wrap items-center gap-2"><p class="kicker text-xs sm:text-sm font-bold text-[#d4af37] mr-1">ເວລາກັບຈິດ · ຕອນທີ 7</p><?php echo $dharmaTag; ?></div>
             <h2 class="lux-title text-3xl sm:text-5xl mt-3">ໂມງ <span class="lux-gold">ປະຕິຈຈະສະມຸບບາດ</span></h2>
             <p class="text-white/65 mt-3 max-w-3xl text-sm sm:text-base leading-relaxed">ໃນທາງພຸດທະທຳ ປະສົບການ ແລະ ຄວາມທຸກ <b class="text-[#f5d98b]">ບໍ່ໄດ້ເກີດຂຶ້ນລອຍໆ</b> ແຕ່ເກີດໂດຍອາໄສເຫດ ແລະ ປັດໄຈ 12 ຂໍ້ — ຂໍ້ໜຶ່ງເປັນປັດໄຈໃຫ້ອີກຂໍ້ໜຶ່ງ ວົນເປັນວົງຈອນ ຕາບໃດທີ່ຍັງມີອະວິຊາ.</p>
             <div class="flex flex-wrap items-center gap-x-1.5 gap-y-1 mt-3 text-[11px] sm:text-xs font-bold">
@@ -474,9 +564,9 @@
         </div>
 
         <!-- 10. Kala 3: cause and result across time -->
-        <div class="slide flex px-4 sm:px-16 py-5 sm:py-10" x-show="i===6" x-transition.opacity.duration.500ms>
+        <div class="slide flex px-4 sm:px-16 py-5 sm:py-10" x-show="i===7" x-transition.opacity.duration.500ms>
           <div class="w-full">
-            <div class="flex flex-wrap items-center gap-2"><p class="kicker text-xs sm:text-sm font-bold text-[#d4af37] mr-1">ເວລາກັບຈິດ · ຕອນທີ 7</p><?php echo $dharmaTag; ?></div>
+            <div class="flex flex-wrap items-center gap-2"><p class="kicker text-xs sm:text-sm font-bold text-[#d4af37] mr-1">ເວລາກັບຈິດ · ຕອນທີ 8</p><?php echo $dharmaTag; ?></div>
             <h2 class="lux-title text-3xl sm:text-5xl mt-3">ກາລະ 3 — <span class="lux-gold">ເຫດ ແລະ ຜົນ ໃນເວລາ</span></h2>
             <p class="text-white/65 mt-3 max-w-3xl text-sm sm:text-base leading-relaxed">ສັງເຂບ 4: ການຈັດກຸ່ມປະຕິຈຈະສະມຸບບາດ ຕາມເຫດ ແລະ ຜົນ ຂ້າມອະດີດ-ປັດຈຸບັນ-ອະນາຄົດ (ຕາມຄຳອະທິບາຍສາຍເຖລະວາດ).</p>
             <p class="text-xs text-white/45 mt-1.5 max-w-3xl"><i class="fas fa-circle-info text-[#d4af37] mr-1.5"></i>ນີ້ເປັນກອບອະທິບາຍແບບໜຶ່ງ — ບໍ່ໄດ້ໝາຍຄວາມວ່າທຸກຂໍ້ເກີດແຍກກັນ ເປັນຂັ້ນຕອນ ທີ່ມີຊ່ວງເວລາຕາຍຕົວສະເໝີ.</p>
@@ -556,9 +646,9 @@
         $implied = '#f87171';
         ?>
         <!-- 11. The wheel: defilement · action · result across past, present, future -->
-        <div class="slide flex px-4 sm:px-16 py-5 sm:py-10" x-show="i===7" x-transition.opacity.duration.500ms>
+        <div class="slide flex px-4 sm:px-16 py-5 sm:py-10" x-show="i===8" x-transition.opacity.duration.500ms>
           <div class="w-full">
-            <div class="flex flex-wrap items-center gap-2"><p class="kicker text-xs sm:text-sm font-bold text-[#d4af37] mr-1">ເວລາກັບຈິດ · ຕອນທີ 8</p><?php echo $dharmaTag; ?></div>
+            <div class="flex flex-wrap items-center gap-2"><p class="kicker text-xs sm:text-sm font-bold text-[#d4af37] mr-1">ເວລາກັບຈິດ · ຕອນທີ 9</p><?php echo $dharmaTag; ?></div>
             <h2 class="lux-title text-3xl sm:text-5xl mt-3">ວົງລໍ້ <span class="lux-gold">ກິເລສ · ກຳ · ວິບາກ</span></h2>
             <p class="text-white/65 mt-3 max-w-3xl text-sm sm:text-base leading-relaxed"><b class="text-rose-300">ກິເລສ</b> (ຄວາມໂລບ ໂກດ ຫຼົງ) → <b class="text-sky-300">ກຳ</b> (ການກະທຳທີ່ມີເຈດຕະນາ ທາງກາຍ ວາຈາ ໃຈ) → <b class="text-[#f5d98b]">ວິບາກ</b> (ຜົນຕາມເງື່ອນໄຂ) → ກິເລສໃໝ່ ↻ — ເປັນ <b class="text-white/85">ເຄືອຂ່າຍເຫດປັດໄຈ</b> ທີ່ວົນຕໍ່ກັນ ບໍ່ແມ່ນເສັ້ນຊື່. ກົດເບິ່ງແຕ່ລະຂັ້ນຕອນໄດ້.</p>
 
@@ -710,9 +800,9 @@
         </div>
 
         <!-- 11a. Feeling → craving: the link we can actually practise with -->
-        <div class="slide flex px-4 sm:px-16 py-5 sm:py-10" x-show="i===8" x-transition.opacity.duration.500ms>
+        <div class="slide flex px-4 sm:px-16 py-5 sm:py-10" x-show="i===9" x-transition.opacity.duration.500ms>
           <div class="w-full">
-            <div class="flex flex-wrap items-center gap-2"><p class="kicker text-xs sm:text-sm font-bold text-[#d4af37] mr-1">ເວລາກັບຈິດ · ຕອນທີ 9</p><?php echo $dharmaTag; ?></div>
+            <div class="flex flex-wrap items-center gap-2"><p class="kicker text-xs sm:text-sm font-bold text-[#d4af37] mr-1">ເວລາກັບຈິດ · ຕອນທີ 10</p><?php echo $dharmaTag; ?></div>
             <h2 class="lux-title text-3xl sm:text-5xl mt-3"><span class="lux-gold">ເວທະນາ → ຕັນຫາ</span> ຈຸດທີ່ຝຶກໄດ້ໃນຊີວິດຈິງ</h2>
             <p class="text-white/65 mt-3 max-w-3xl text-sm sm:text-base">ຕົວຢ່າງ: <b class="text-[#f5d98b]">ເຫັນໂທລະສັບລຸ້ນໃໝ່</b> — ສອງເສັ້ນທາງ ຈາກຄວາມຮູ້ສຶກດຽວກັນ.</p>
             <?php
@@ -759,9 +849,9 @@
         // What each link becomes for the Arahant: ວິຊາ replaces ອະວິຊາ, actions are mere ກິລິຍາ, the senses still work, the rest has ceased.
         $arahantState = fn($k) => $k === 0 ? ['ວິຊາ', '#5eead4'] : ($k === 1 ? ['ກິລິຍາ', '#94a3b8'] : ($k <= 6 ? ['ຮັບຮູ້', '#5eead4'] : ['ດັບ', '#64748b']));
         ?>
-        <div class="slide flex px-4 sm:px-16 py-5 sm:py-10" x-show="i===9" x-transition.opacity.duration.500ms>
+        <div class="slide flex px-4 sm:px-16 py-5 sm:py-10" x-show="i===10" x-transition.opacity.duration.500ms>
           <div class="w-full">
-            <div class="flex flex-wrap items-center gap-2"><p class="kicker text-xs sm:text-sm font-bold text-[#d4af37] mr-1">ເວລາກັບຈິດ · ຕອນທີ 10</p><?php echo $dharmaTag; ?></div>
+            <div class="flex flex-wrap items-center gap-2"><p class="kicker text-xs sm:text-sm font-bold text-[#d4af37] mr-1">ເວລາກັບຈິດ · ຕອນທີ 11</p><?php echo $dharmaTag; ?></div>
             <h2 class="lux-title text-3xl sm:text-5xl mt-3">ຖືກເວລາກິນ <span class="text-white/40">vs</span> <span class="lux-gold">ກິນເວລາ</span></h2>
             <div class="lux-card rounded-2xl px-4 py-3 mt-4 max-w-4xl">
               <p class="text-xs sm:text-sm text-[#f5d98b]/85 italic">ກາໂລ ຄະສະຕິ ພູຕານິ ສັພພາເນວະ ສະຫັດຕະນາ · ໂຍ ຈະ ກາລະຄະໂສ ພູໂຕ ສະ ພູຕະປະຈະນິງ ປະຈິ</p>
@@ -942,14 +1032,14 @@
         </div>
 
         <!-- 12. Time with mind — Buddhadasa's sermon -->
-        <div class="slide flex px-4 sm:px-16 py-5 sm:py-10" x-show="i===10" x-transition.opacity.duration.500ms>
+        <div class="slide flex px-4 sm:px-16 py-5 sm:py-10" x-show="i===11" x-transition.opacity.duration.500ms>
           <div class="w-full">
-            <div class="flex flex-wrap items-center gap-2"><p class="kicker text-xs sm:text-sm font-bold text-[#d4af37] mr-1">ເວລາກັບຈິດ · ຕອນທີ 11</p><?php echo $dharmaTag; ?></div>
+            <div class="flex flex-wrap items-center gap-2"><p class="kicker text-xs sm:text-sm font-bold text-[#d4af37] mr-1">ເວລາກັບຈິດ · ຕອນທີ 12</p><?php echo $dharmaTag; ?></div>
             <h2 class="lux-title text-3xl sm:text-5xl mt-3">ເວລາ ຄື <span class="lux-gold">ການປ່ຽນແປງຂອງສັງຂານ</span></h2>
             <div class="grid lg:grid-cols-[1.2fr_1fr] gap-5 sm:gap-6 mt-6">
               <div class="rise">
                 <div class="lux-card rounded-[24px] overflow-hidden aspect-video">
-                  <template x-if="i===10">
+                  <template x-if="i===11">
                     <iframe class="w-full h-full" src="https://www.youtube-nocookie.com/embed/5-N1ka6iRS8?start=1935&rel=0" title="ເວລາ — ທ່ານພຸດທະທາດ ພິກຂຸ" frameborder="0" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
                   </template>
                 </div>
@@ -979,7 +1069,7 @@
         </div>
 
         <!-- 14. Summary -->
-        <div class="slide flex px-4 sm:px-16 py-5 sm:py-10" x-show="i===11" x-transition.opacity.duration.500ms>
+        <div class="slide flex px-4 sm:px-16 py-5 sm:py-10" x-show="i===12" x-transition.opacity.duration.500ms>
           <div class="w-full max-w-4xl text-center">
             <i class="fas fa-dharmachakra text-4xl text-[#d4af37] rise"></i>
             <p class="kicker text-xs sm:text-sm font-bold text-[#d4af37] mt-5">ສະຫຼຸບ</p>
@@ -1011,7 +1101,7 @@
         </div>
 
         <!-- 15. Sources — science and dharma kept apart, so neither appears to vouch for the other -->
-        <div class="slide flex px-4 sm:px-16 py-5 sm:py-10" x-show="i===12" x-transition.opacity.duration.500ms>
+        <div class="slide flex px-4 sm:px-16 py-5 sm:py-10" x-show="i===13" x-transition.opacity.duration.500ms>
           <div class="w-full">
             <p class="kicker text-xs sm:text-sm font-bold text-[#d4af37]">ແຫຼ່ງອ້າງອີງ</p>
             <h2 class="lux-title text-3xl sm:text-5xl mt-3">ສອງຊັ້ນ <span class="lux-gold">ສອງແຫຼ່ງ</span></h2>
@@ -1042,6 +1132,11 @@
                     ['https://suttacentral.net/mn28', 'ມັດຊິມະນິກາຍ 28 — ມະຫາຫັດຖິປະໂທປະມະສູດ', '“ຜູ້ໃດເຫັນປະຕິຈຈະສະມຸບບາດ ຜູ້ນັ້ນເຫັນທຳ”'],
                     ['https://suttacentral.net/sn22.48', 'ສັງຍຸດຕະນິກາຍ 22.48 — ຂັນທະສູດ', 'ຂັນ 5: ຮູບ ເວທະນາ ສັນຍາ ສັງຂານ ວິນຍານ'],
                     ['https://suttacentral.net/sn36.6', 'ສັງຍຸດຕະນິກາຍ 36.6 — ສັລລັດຖະສູດ', 'ລູກສອນສອງດອກ: ເວທະນາເກີດ ແຕ່ບໍ່ຕ້ອງເພີ່ມທຸກ'],
+                    ['https://suttacentral.net/sn12.61', 'ສັງຍຸດຕະນິກາຍ 12.61 — ອັດສຸຕະວາສູດ', 'ລີງຈັບກິ່ງໄມ້: ຈິດ ມະໂນ ວິນຍານ ເກີດອັນໜຶ່ງ ດັບອັນໜຶ່ງ'],
+                    ['https://suttacentral.net/mn38', 'ມັດຊິມະນິກາຍ 38 — ມະຫາຕັນຫາສັງຂະຍະສູດ', 'ວິນຍານ ເກີດເພາະປັດໄຈ; ໄຟ ເອີ້ນຕາມເຊື້ອ'],
+                    ['https://suttacentral.net/sn12.53', 'ສັງຍຸດຕະນິກາຍ 12.53 — ສັງໂຍຊະນະສູດ', 'ຕະກຽງ ບໍ່ເຕີມນ້ຳມັນ ກໍດັບ'],
+                    ['https://suttacentral.net/an3.76', 'ອັງຄຸດຕະຣະນິກາຍ 3.76 — ພະວະສູດທີ 1', 'ກຳ = ນາ, ວິນຍານ = ເມັດພືດ, ຕັນຫາ = ຄວາມຊຸ່ມ'],
+                    ['https://suttacentral.net/sn12.38', 'ສັງຍຸດຕະນິກາຍ 12.38 — ເຈຕະນາສູດ', 'ເຈຕະນາ ແລະ ອະນຸໄສ ເປັນບ່ອນຕັ້ງຂອງວິນຍານ'],
                   ] as [$url, $name, $note]): ?>
                   <li><a href="<?php echo $url; ?>" target="_blank" rel="noopener" class="font-bold text-[#f5d98b] underline underline-offset-2"><?php echo $name; ?></a><p class="text-xs text-white/50"><?php echo $note; ?></p></li>
                   <?php endforeach; ?>
@@ -1057,6 +1152,22 @@
       <div x-show="zoom" x-transition.opacity @click="zoom=null" class="no-print absolute inset-0 z-40 bg-black/90 backdrop-blur flex items-center justify-center p-4 sm:p-10 cursor-zoom-out">
         <img :src="zoom" alt="" class="max-w-full max-h-full object-contain rounded-2xl shadow-2xl">
         <button @click.stop="zoom=null" class="absolute top-4 right-4 w-10 h-10 rounded-full lux-card text-[#f5d98b]" aria-label="ປິດ"><i class="fas fa-xmark"></i></button>
+      </div>
+
+      <!-- Narration subtitles -->
+      <div x-show="narr.on" x-transition.opacity class="no-print relative z-30 flex-none flex justify-center px-3 sm:px-10 pt-2" x-cloak>
+        <div class="lux-card bg-[#070810]/85 rounded-2xl pl-3 pr-2 py-2 max-w-3xl w-full flex items-center gap-3 shadow-2xl" role="status" aria-live="polite">
+          <span class="w-7 h-7 shrink-0 rounded-full flex items-center justify-center text-[#14110a] text-[11px]" :class="narr.paused || narr.loading ? 'bg-white/30' : 'lux-btn animate-pulse'">
+            <i class="fas" :class="narr.loading ? 'fa-spinner fa-spin' : (narr.paused ? 'fa-pause' : 'fa-volume-high')"></i>
+          </span>
+          <p class="flex-1 min-w-0 text-xs sm:text-sm leading-snug text-white/90 line-clamp-3" :lang="narr.lang" x-text="narr.text"></p>
+          <div class="flex shrink-0 rounded-full bg-white/5 p-0.5">
+            <template x-for="l in ['lo', 'th']" :key="l">
+              <button data-fs @click="setNarrLang(l)" class="px-2 py-1 rounded-full text-[10px] font-black transition-all" :class="narr.lang===l ? 'lux-btn' : 'text-white/60'" x-text="NARR_LABELS[l]"></button>
+            </template>
+          </div>
+          <button data-fs @click="stopNarration()" class="w-7 h-7 shrink-0 rounded-full text-white/60 hover:text-white hover:bg-white/10 flex items-center justify-center" :title="t('stop')" :aria-label="t('stop')"><i class="fas fa-stop text-[11px]"></i></button>
+        </div>
       </div>
 
       <!-- Controls -->
@@ -1079,9 +1190,23 @@
 </section>
 
 <script>
+  // Per-slide narration: [lang][slide] => [{ t: sentence, a: pre-generated mp3 URL | null }].
+  const NARRATION = <?php echo json_encode($narration, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG); ?>;
+  const NARR_LABELS = { lo: 'ລາວ', th: 'ไทย' };
+  const NARR_TTS = { lo: 'lo-LA', th: 'th-TH' };
+  const NARR_UI = {
+    play: 'ຟັງ', pause: 'ຢຸດຊົ່ວຄາວ', stop: 'ຢຸດ', narrate: 'ຟັງຄຳບັນຍາຍແຕ່ລະສະໄລ (P)', narrLang: 'ພາສາຄຳບັນຍາຍ',
+    noVoice: 'ບໍ່ສາມາດເປີດສຽງໄດ້ — ສະແດງສະເພາະຄຳບັນຍາຍ.',
+  };
+
   function timelineDeck() {
     return {
       i: 0,
+      // Narration: `run` invalidates callbacks from a sentence that was stopped or skipped.
+      narr: { on: false, paused: false, loading: false, lang: 'lo', line: 0, text: '', run: 0, timer: null, warned: false },
+      audio: null,
+      ttsCache: {},
+      t(k) { return NARR_UI[k]; },
       touchX: null,
       touchY: null,
       fullscreen: false,
@@ -1208,7 +1333,7 @@
       uSel: 12,
       uGo(n) { this.uSel = Math.max(0, Math.min(this.uNodes.length - 1, n)); },
       uSide(n) { return n < 12 ? 'p' : (n > 12 ? 'a' : 'dukkha'); },
-      titles: ['ປັດຈຸບັນທີ່ເຮົາຮັບຮູ້', 'ແສງຈາກດວງດາວ', 'ແສງດາວ ກັບ ຈິດ', 'ຈິດເກີດ-ດັບ ທຸກຂະນະ', 'ຂັນ 5 ກັບ ອຸປະມາແສງດາວ', 'ໂມງປະຕິຈຈະສະມຸບບາດ', 'ກາລະ 3: ເຫດ ແລະ ຜົນ', 'ວົງລໍ້ ກິເລສ · ກຳ · ວິບາກ', 'ເວທະນາ → ຕັນຫາ', 'ຖືກເວລາກິນ · ກິນເວລາ', 'ເວລາ ກັບ ຈິດ', 'ສະຫຼຸບ', 'ແຫຼ່ງອ້າງອີງ'],
+      titles: ['ປັດຈຸບັນທີ່ເຮົາຮັບຮູ້', 'ແສງຈາກດວງດາວ', 'ແສງດາວ ກັບ ຈິດ', 'ຈິດເກີດ-ດັບ ທຸກຂະນະ', '3 ອຸປະມາ ຈາກພຣະສູດ', 'ຖ້າບໍ່ມີຫຍັງເດີນທາງ ເປັນຫຍັງອະດີດ ຍັງສົ່ງຜົນເຖິງດຽວນີ້? (ຂັນ 5 ກັບ ອຸປະມາແສງດາວ)', 'ໂມງປະຕິຈຈະສະມຸບບາດ', 'ກາລະ 3: ເຫດ ແລະ ຜົນ', 'ວົງລໍ້ ກິເລສ · ກຳ · ວິບາກ', 'ເວທະນາ → ຕັນຫາ', 'ຖືກເວລາກິນ · ກິນເວລາ', 'ເວລາ ກັບ ຈິດ', 'ສະຫຼຸບ', 'ແຫຼ່ງອ້າງອີງ'],
       get total() { return this.titles.length; },
 
       zoomTo(z) { this.scale = Math.round(Math.min(this.maxScale, Math.max(this.minScale, z)) * 100) / 100; },
@@ -1248,6 +1373,105 @@
         // Browsers only allow fullscreen from a user gesture, so enter it on the first tap/key press after opening.
         const enter = e => { if (!document.fullscreenElement && !e.target.closest?.('[data-fs]')) this.toggleFullscreen(); };
         ['pointerup', 'keydown'].forEach(t => document.addEventListener(t, enter, { once: true }));
+        this.initNarration(q);
+      },
+
+      // ---- Spoken narration: pre-generated male Edge voices → /api/tts/synthesize → device voice → subtitles only ----
+      initNarration(q) {
+        if (this.audio) return; // init() runs twice (see initZoom)
+        const nl = q.get('narr') || localStorage.getItem('slides_narr');
+        if (NARRATION[nl]) this.narr.lang = nl;
+        this.audio = new Audio();
+        this.audio.preload = 'auto';
+        window.addEventListener('pagehide', () => this.stopNarration());
+        // Moving to another slide (by hand or auto-advance) narrates that slide from the top.
+        this.$watch('i', () => { if (this.narr.on) this.narrateSlide(); });
+      },
+      setNarrLang(l) {
+        if (l === this.narr.lang) return;
+        this.narr.lang = l; localStorage.setItem('slides_narr', l);
+        if (this.narr.on) this.narrateSlide();
+      },
+      toggleNarration() {
+        if (!this.narr.on) { this.narr.on = true; this.narr.paused = false; return this.narrateSlide(); }
+        if (this.narr.paused) { this.narr.paused = false; this.speakLine(); } // restarts the current sentence
+        else { this.narr.paused = true; this.haltSpeech(); }
+      },
+      stopNarration() { this.narr.on = false; this.narr.paused = false; this.narr.text = ''; this.haltSpeech(); },
+      haltSpeech() {
+        this.narr.run++;
+        this.narr.loading = false;
+        clearTimeout(this.narr.timer);
+        if (this.audio) { this.audio.onended = this.audio.onerror = null; this.audio.pause(); }
+        if (window.speechSynthesis) speechSynthesis.cancel();
+      },
+      narrateSlide() { this.narr.line = 0; this.speakLine(); },
+      narrLines() { return NARRATION[this.narr.lang][this.i] || []; },
+      // MP3 URL for a sentence: the pre-generated file, else synthesized once by the site's TTS and kept as a blob.
+      async audioUrl(line) {
+        if (line.a) return line.a;
+        const key = this.narr.lang + '|' + line.t;
+        if (!(key in this.ttsCache)) {
+          this.ttsCache[key] = fetch('<?= url('api/tts/synthesize') ?>', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: line.t, language: NARR_TTS[this.narr.lang] }),
+          }).then(r => r.ok ? r.json() : null).then(d => {
+            if (!d || !d.audioContent) return null;
+            const bin = Uint8Array.from(atob(d.audioContent), c => c.charCodeAt(0));
+            return URL.createObjectURL(new Blob([bin], { type: 'audio/mpeg' }));
+          }).catch(() => null);
+        }
+        return this.ttsCache[key];
+      },
+      // Warm up the next sentence so there is no gap between them.
+      prefetch(line) {
+        if (!line) return;
+        if (line.a) { const a = new Audio(); a.preload = 'auto'; a.src = line.a; } else this.audioUrl(line);
+      },
+      async speakLine() {
+        this.haltSpeech();
+        const run = this.narr.run, lines = this.narrLines();
+        if (this.narr.line >= lines.length) {
+          // A short breath, then the next slide (the `i` watcher narrates it), or finish on the last one.
+          this.narr.timer = setTimeout(() => this.i < this.total - 1 ? this.go(this.i + 1) : this.stopNarration(), 900);
+          return;
+        }
+        const line = lines[this.narr.line];
+        this.narr.text = line.t;
+        if (this.narr.paused) return;
+        const next = () => { if (run === this.narr.run) { this.narr.line++; this.speakLine(); } };
+        this.prefetch(lines[this.narr.line + 1]);
+
+        this.narr.loading = !line.a;
+        const src = await this.audioUrl(line);
+        if (run !== this.narr.run) return;
+        this.narr.loading = false;
+        if (src) {
+          this.audio.src = src;
+          this.audio.onended = next;
+          this.audio.onerror = () => { if (run === this.narr.run) this.speakFallback(line.t, run, next); };
+          return this.audio.play().catch(() => { if (run === this.narr.run) this.speakFallback(line.t, run, next); });
+        }
+        this.speakFallback(line.t, run, next);
+      },
+      // Offline / server TTS down: the device's own voice (male if it has one), else just time the subtitle.
+      speakFallback(text, run, next) {
+        const readTime = Math.max(2500, text.length * 80);
+        const l = this.narr.lang, voices = window.speechSynthesis ? speechSynthesis.getVoices() : [];
+        const mine = voices.filter(v => v.lang.toLowerCase().startsWith(l));
+        const voice = mine.find(v => /niwat|chanthavong|male|pattara/i.test(v.name) && !/female/i.test(v.name)) || mine[0];
+        if (!voice) {
+          if (!this.narr.warned && window.Swal) Swal.fire({ toast: true, position: 'top', icon: 'info', title: this.t('noVoice'), showConfirmButton: false, timer: 4000 });
+          this.narr.warned = true;
+          this.narr.timer = setTimeout(next, readTime);
+          return;
+        }
+        const u = new SpeechSynthesisUtterance(text);
+        u.voice = voice; u.lang = voice.lang; u.rate = .95;
+        if (!/niwat|chanthavong|male|pattara/i.test(voice.name)) u.pitch = .8; // nudge a female-only voice lower
+        u.onend = next;
+        u.onerror = e => { if (!['interrupted', 'canceled'].includes(e.error)) this.narr.timer = setTimeout(next, readTime); };
+        this.narr.timer = setTimeout(() => { if (run === this.narr.run) speechSynthesis.speak(u); }, 60);
       },
       setTick(k) {
         let d = ((k - this.tick) % 12 + 12) % 12;
@@ -1279,6 +1503,7 @@
         }
         if (['ArrowRight', 'PageDown', ' '].includes(e.key)) { e.preventDefault(); this.go(this.i + 1); }
         if (['ArrowLeft', 'PageUp'].includes(e.key)) { e.preventDefault(); this.go(this.i - 1); }
+        if (e.key === 'p' || e.key === 'P') { e.preventDefault(); this.toggleNarration(); }
         if (e.key === 'Home') this.go(0);
         if (e.key === 'End') this.go(this.total - 1);
       },
