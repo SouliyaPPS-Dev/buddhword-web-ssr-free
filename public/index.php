@@ -14,9 +14,10 @@ if ($isProduction) {
     error_reporting(E_ALL);
 }
 
-// Load environment variables
-if (file_exists(__DIR__ . '/../.env')) {
-    $lines = file(__DIR__ . '/../.env', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+// Load environment variables (.env.local is gitignored — put secrets there; it overrides .env)
+foreach (['.env', '.env.local'] as $envFile) {
+    if (!file_exists(__DIR__ . '/../' . $envFile)) continue;
+    $lines = file(__DIR__ . '/../' . $envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
     foreach ($lines as $line) {
         $line = trim($line);
         if (empty($line) || strpos($line, '#') === 0) continue;
@@ -25,7 +26,7 @@ if (file_exists(__DIR__ . '/../.env')) {
             $_ENV[trim($name)] = trim($value);
             putenv(trim($name) . '=' . trim($value));
         }
-    } 
+    }
 }
 
 // Composer autoloader (for smalot/pdfparser etc.)

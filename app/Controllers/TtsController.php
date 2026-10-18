@@ -20,7 +20,7 @@ class TtsController {
             $result = $service->synthesize($text, $lang);
 
             if (!isset($result['error'])) {
-                $result['hash'] = md5($text . '|' . $lang);
+                $result['hash'] = TtsService::cacheKey($text, $lang);
             }
             
             $this->json($result);
@@ -156,7 +156,7 @@ class TtsController {
             $dir = __DIR__ . '/../../storage/tts';
             if (!is_dir($dir)) @mkdir($dir, 0755, true);
 
-            $hash = md5($text . '|' . $lang);
+            $hash = TtsService::cacheKey($text, $lang);
             $mp3File = $dir . '/' . $hash . '.mp3';
             $metaFile = $dir . '/' . $hash . '.json';
 

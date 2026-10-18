@@ -24,7 +24,7 @@ class TtsLibrary {
             return ['error' => true, 'message' => 'Language not supported'];
         }
 
-        $hash = md5($text . '|' . $languageCode);
+        $hash = TtsService::cacheKey($text, $languageCode);
         $mp3File = $this->storageDir . '/' . $hash . '.mp3';
         $metaFile = $this->storageDir . '/' . $hash . '.json';
 
@@ -51,15 +51,17 @@ class TtsLibrary {
         }
 
         if ($hash === null) {
-            $hash = md5($text . '|' . $languageCode);
+            $hash = TtsService::cacheKey($text, $languageCode);
         }
 
         $voice = $this->voiceMap[$languageCode]['voice'];
-        $mp3File = $this->storageDir . '/' . $hash . '.mp3';
+        // Still serve audio when the cache dir isn't writable — just skip caching it
+        $cacheable = is_writable($this->storageDir);
+        $mp3File = $cacheable ? $this->storageDir . '/' . $hash . '.mp3' : sys_get_temp_dir() . '/tts_' . $hash . '.mp3';
         $metaFile = $this->storageDir . '/' . $hash . '.json';
 
-        $which = trim(shell_exec('which edge-tts 2>/dev/null'));
-        if (!$which || !is_executable($which)) {
+        $which = $this->findEdgeTtsBinary();
+        if (!$which) {
             return ['error' => true, 'message' => 'edge-tts not installed'];
         }
 
@@ -71,6 +73,7 @@ class TtsLibrary {
 
         $cmd = $which . ' --file ' . escapeshellarg($textFile)
              . ' --voice ' . escapeshellarg($voice)
+             . ' --rate=-5%'
              . ' --write-media ' . escapeshellarg($mp3File)
              . ' 2>&1';
 
@@ -84,24 +87,31 @@ class TtsLibrary {
 
         $duration = $this->estimateDuration($mp3File);
 
+        // Spread word highlights over the real audio length, proportional to word length
+        $words = preg_split('/\s+/u', trim($text));
+        $charCount = max(1, mb_strlen(implode(' ', $words)));
         $timepoints = [];
         $totalChars = 0;
-        $words = preg_split('/\s+/u', $text);
         foreach ($words as $word) {
-            $timepoints[] = ['markName' => $word, 'timeSeconds' => round($totalChars / 4.5, 3)];
+            $timepoints[] = ['markName' => $word, 'timeSeconds' => round($totalChars / $charCount * $duration, 3)];
             $totalChars += mb_strlen($word) + 1;
         }
 
-        file_put_contents($metaFile, json_encode([
-            'text' => $text,
-            'language' => $languageCode,
-            'voice' => $voice,
-            'duration' => $duration,
-            'timepoints' => $timepoints,
-        ], JSON_UNESCAPED_UNICODE));
+        $audio = file_get_contents($mp3File);
+        if ($cacheable) {
+            file_put_contents($metaFile, json_encode([
+                'text' => $text,
+                'language' => $languageCode,
+                'voice' => $voice,
+                'duration' => $duration,
+                'timepoints' => $timepoints,
+            ], JSON_UNESCAPED_UNICODE));
+        } else {
+            @unlink($mp3File);
+        }
 
         return [
-            'audioContent' => base64_encode(file_get_contents($mp3File)),
+            'audioContent' => base64_encode($audio),
             'timepoints' => $timepoints,
             'generated' => true,
         ];
@@ -115,7 +125,7 @@ class TtsLibrary {
             $lang = $item['lang'] ?? 'lo-LA';
             if (!trim($text)) continue;
 
-            $hash = md5($text . '|' . $lang);
+            $hash = TtsService::cacheKey($text, $lang);
             $mp3File = $this->storageDir . '/' . $hash . '.mp3';
 
             if (file_exists($mp3File)) {
@@ -161,7 +171,23 @@ class TtsLibrary {
     }
 
     private function estimateDuration($mp3File) {
+        // edge-tts outputs 48 kbit/s mono MP3 = 6000 bytes per second
         $size = filesize($mp3File);
-        return round($size / 16000, 2);
+        return round($size / 6000, 2);
+    }
+
+    /** Locate the edge-tts CLI; web servers (e.g. XAMPP) often run with a minimal PATH. */
+    private function findEdgeTtsBinary() {
+        $candidates = [trim((string) shell_exec('command -v edge-tts 2>/dev/null'))];
+        foreach (['/usr/local/bin', '/opt/homebrew/bin', '/usr/bin'] as $dir) {
+            $candidates[] = $dir . '/edge-tts';
+        }
+        $home = getenv('HOME');
+        if ($home) $candidates[] = $home . '/.local/bin/edge-tts';
+
+        foreach ($candidates as $path) {
+            if ($path && @is_executable($path)) return $path;
+        }
+        return null;
     }
 }

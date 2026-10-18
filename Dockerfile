@@ -6,7 +6,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) \
         pdo_mysql mbstring curl gd intl zip exif sockets \
-    && pip install --break-system-packages -U "huggingface_hub[cli]" \
+    && pip install --break-system-packages -U "huggingface_hub[cli]" edge-tts \
     && rm -rf /var/lib/apt/lists/*
 
 RUN a2enmod rewrite

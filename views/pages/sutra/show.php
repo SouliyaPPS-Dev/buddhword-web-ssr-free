@@ -995,20 +995,9 @@ function toggleTTS() {
 
     if (typeof tryBrowserTTS === 'function') {
         tryBrowserTTS(text, lang, function() {
-            /* No Lao voice in browser — try Edge TTS WebSocket (Microsoft Neural voices for Lao) */
-            if (typeof browserEdgeTTS === 'function') {
-                browserEdgeTTS(text, lang).then(function(result) {
-                    if (result && result.audio) {
-                        playEdgeTTSAudio(result, text, lang);
-                    } else {
-                        startServerTTS(text, lang);
-                    }
-                }).catch(function() {
-                    startServerTTS(text, lang);
-                });
-            } else {
-                startServerTTS(text, lang);
-            }
+            /* No Lao voice in browser — use the server (Python edge-tts, Lao neural voice).
+               The in-browser Edge WebSocket is skipped: Microsoft now rejects its token (403). */
+            startServerTTS(text, lang);
         });
         return;
     }

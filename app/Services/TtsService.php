@@ -31,6 +31,14 @@ class TtsService {
         }
     }
 
+    /**
+     * Cache key for a text/language pair. Bump the version suffix to invalidate
+     * previously cached audio (v2: Lao text used to be cached as Thai-voice audio).
+     */
+    public static function cacheKey($text, $languageCode) {
+        return md5($text . '|' . $languageCode . '|v2');
+    }
+
     public function synthesize($text, $languageCode = 'lo-LA') {
         $voice = $this->voiceMap[$languageCode] ?? 'en-US-AriaNeural';
         $text = $this->normalizeText($text, $languageCode);
@@ -47,7 +55,15 @@ class TtsService {
             if ($cached !== null) return $cached;
         }
 
-        // 2. Native Edge TTS (uses stream_socket_client via ReactPHP, no sockets ext needed)
+        // 2. Python edge-tts CLI — kept up to date with Microsoft's Sec-MS-GEC token,
+        //    gives the native Lao (Vientiane) neural voice
+        $result = $this->synthesizeLibrary($text, $languageCode);
+        if (!isset($result['error'])) {
+            $this->saveToCache($text, $languageCode, $result);
+            return $result;
+        }
+
+        // 3. Native PHP Edge TTS (uses stream_socket_client via ReactPHP, no sockets ext needed)
         if (class_exists(EdgeTTS::class)) {
             try {
                 $result = $this->synthesizeEdgeTTS($text, $voice);
@@ -59,17 +75,10 @@ class TtsService {
             } catch (\Throwable $e) {}
         }
 
-        // 3. HTTP Methods (Fallbacks for Production or if Edge fails)
+        // 4. HTTP Methods (Fallbacks for Production or if Edge fails)
         $result = $this->synthesizeHttp($text, $voice, $languageCode);
         if (!isset($result['error'])) {
             $this->saveAudioToFile($text, $languageCode, $result['audioContent'], $result['timepoints'] ?? []);
-            $this->saveToCache($text, $languageCode, $result);
-            return $result;
-        }
-
-        // 4. TtsLibrary (Local pre-generated)
-        $result = $this->synthesizeLibrary($text, $languageCode);
-        if (!isset($result['error'])) {
             $this->saveToCache($text, $languageCode, $result);
             return $result;
         }
@@ -78,7 +87,7 @@ class TtsService {
     }
 
     private function saveAudioToFile($text, $languageCode, $audioContent, $timepoints = []) {
-        $hash = md5($text . '|' . $languageCode);
+        $hash = self::cacheKey($text, $languageCode);
         
         // Use cache helper for cross-environment support
         require_once __DIR__ . '/../Helpers/cache.php';
@@ -113,7 +122,7 @@ class TtsService {
     }
 
     private function synthesizeFromFile($text, $languageCode) {
-        $hash = md5($text . '|' . $languageCode);
+        $hash = self::cacheKey($text, $languageCode);
         
         // Use cache helper for cross-environment support
         require_once __DIR__ . '/../Helpers/cache.php';
@@ -150,13 +159,8 @@ class TtsService {
         if (!isset($result['error'])) return $result;
         $errors[] = 'FreeTTS: ' . $result['message'];
 
-        // C. Last Resort: Thai voice for Lao text (only if everything else fails)
-        if ($languageCode === 'lo-LA') {
-            $result = $this->attemptTts($text, 'th-TH');
-            if (!isset($result['error'])) return $result;
-            $errors[] = 'ThaiFallback: ' . $result['message'];
-        }
-
+        // No Thai-voice fallback for Lao: a Thai engine mispronounces Lao text badly,
+        // so failing is better than serving wrong-language audio.
         return [
             'error' => true, 
             'message' => 'All TTS methods failed for ' . $languageCode . '. ' . implode(' | ', $errors),
@@ -354,7 +358,7 @@ class TtsService {
     private function getFromCache($text, $lang) {
         try {
             $db = \App\Core\Database::getInstance();
-            $hash = md5($text . '|' . $lang);
+            $hash = self::cacheKey($text, $lang);
             $stmt = $db->prepare("SELECT audio_content, timepoints FROM tts_cache WHERE text_hash = ? AND language = ? AND expires_at > NOW()");
             $stmt->execute([$hash, $lang]);
             $row = $stmt->fetch();
@@ -369,7 +373,7 @@ class TtsService {
     private function saveToCache($text, $lang, $result) {
         try {
             $db = \App\Core\Database::getInstance();
-            $hash = md5($text . '|' . $lang);
+            $hash = self::cacheKey($text, $lang);
             $audio = $result['audioContent'] ?? '';
             $tps = json_encode($result['timepoints'] ?? [], JSON_UNESCAPED_UNICODE);
             $stmt = $db->prepare("INSERT INTO tts_cache (text_hash, text_content, language, audio_content, timepoints, expires_at) VALUES (?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 30 DAY)) ON DUPLICATE KEY UPDATE audio_content = VALUES(audio_content), timepoints = VALUES(timepoints), expires_at = DATE_ADD(NOW(), INTERVAL 30 DAY), accessed_count = accessed_count + 1");

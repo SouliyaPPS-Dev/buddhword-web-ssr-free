@@ -114,7 +114,7 @@ try {
     $seen = [];
     $unique = [];
     foreach ($items as $it) {
-        $key = md5($it['text'] . '|' . $it['lang']);
+        $key = \App\Services\TtsService::cacheKey($it['text'], $it['lang']);
         if (!isset($seen[$key])) {
             $seen[$key] = true;
             $unique[] = $it;

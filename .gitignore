@@ -10,3 +10,4 @@ storage/tts/*.mp3
 storage/tts/*.json
 data/
 storage/data/
+.env.local
