@@ -169,8 +169,9 @@ class TtsController {
                 ]);
             }
 
-            $lib = new \App\Services\TtsLibrary();
-            $result = $lib->generateWithPython($text, $lang, $hash);
+            if ($force) { @unlink($mp3File); @unlink($metaFile); }
+            // Same engine chain as /api/tts/synthesize (pre-generated Charon library for Lao, then Edge)
+            $result = (new TtsService())->synthesize($text, $lang);
             if (isset($result['error'])) {
                 $this->json($result);
             }

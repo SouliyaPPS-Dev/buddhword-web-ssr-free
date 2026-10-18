@@ -11,3 +11,4 @@ storage/tts/*.json
 data/
 storage/data/
 .env.local
+storage/tts-library/

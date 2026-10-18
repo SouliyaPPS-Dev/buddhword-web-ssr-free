@@ -172,7 +172,8 @@
     }
     /* Helper: tries browser Lao TTS; calls onNoVoice if no Lao voice available */
     function tryBrowserTTS(text, lang, onNoVoice) {
-        if (!('speechSynthesis' in window) || typeof speakBrowser !== 'function') {
+        // Lao always goes to the server: pre-generated Gemini Charon audio (Edge voice as fallback)
+        if (lang === 'lo-LA' || !('speechSynthesis' in window) || typeof speakBrowser !== 'function') {
             if (typeof onNoVoice === 'function') onNoVoice();
             return;
         }

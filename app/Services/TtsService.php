@@ -34,6 +34,7 @@ class TtsService {
     /**
      * Cache key for a text/language pair. Bump the version suffix to invalidate
      * previously cached audio (v2: Lao text used to be cached as Thai-voice audio).
+     * The pre-generated Lao library uses its own key: LaoAudioLibrary::key().
      */
     public static function cacheKey($text, $languageCode) {
         return md5($text . '|' . $languageCode . '|v2');
@@ -41,21 +42,28 @@ class TtsService {
 
     public function synthesize($text, $languageCode = 'lo-LA') {
         $voice = $this->voiceMap[$languageCode] ?? 'en-US-AriaNeural';
-        $text = $this->normalizeText($text, $languageCode);
+        $text = self::normalizeText($text);
 
-        // 0. File cache check FIRST — if .mp3 + .json exist in storage/tts/, serve directly
+        // 0. Pre-generated Lao library (Gemini Charon) — checked before the caches so a chunk
+        //    once served by the Edge fallback switches to Charon as soon as it is generated
+        if ($languageCode === LaoAudioLibrary::LANG) {
+            $lib = LaoAudioLibrary::find($text);
+            if ($lib) return $lib;
+        }
+
+        // 1. File cache check — if .mp3 + .json exist in storage/tts/, serve directly
         $fileResult = $this->synthesizeFromFile($text, $languageCode);
         if (!isset($fileResult['error'])) {
             return $fileResult;
         }
 
-        // 1. DB cache check — fallback if file cache missed
+        // 2. DB cache check — fallback if file cache missed
         if ($this->cacheEnabled) {
             $cached = $this->getFromCache($text, $languageCode);
             if ($cached !== null) return $cached;
         }
 
-        // 2. Python edge-tts CLI — kept up to date with Microsoft's Sec-MS-GEC token,
+        // 3. Python edge-tts CLI — kept up to date with Microsoft's Sec-MS-GEC token,
         //    gives the native Lao (Vientiane) neural voice
         $result = $this->synthesizeLibrary($text, $languageCode);
         if (!isset($result['error'])) {
@@ -63,7 +71,7 @@ class TtsService {
             return $result;
         }
 
-        // 3. Native PHP Edge TTS (uses stream_socket_client via ReactPHP, no sockets ext needed)
+        // 4. Native PHP Edge TTS (uses stream_socket_client via ReactPHP, no sockets ext needed)
         if (class_exists(EdgeTTS::class)) {
             try {
                 $result = $this->synthesizeEdgeTTS($text, $voice);
@@ -75,7 +83,7 @@ class TtsService {
             } catch (\Throwable $e) {}
         }
 
-        // 4. HTTP Methods (Fallbacks for Production or if Edge fails)
+        // 5. HTTP Methods (Fallbacks for Production or if Edge fails)
         $result = $this->synthesizeHttp($text, $voice, $languageCode);
         if (!isset($result['error'])) {
             $this->saveAudioToFile($text, $languageCode, $result['audioContent'], $result['timepoints'] ?? []);
@@ -320,7 +328,7 @@ class TtsService {
         } catch (\Throwable $e) { return ['error' => true, 'message' => $e->getMessage()]; }
     }
 
-    private function normalizeText($text, $lang) {
+    public static function normalizeText($text) {
         $text = preg_replace('/[\x{200B}-\x{200D}\x{FEFF}]/u', '', $text);
         return trim($text);
     }
